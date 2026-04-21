@@ -463,7 +463,7 @@ window.backToDash=async function(){
   if(auth.currentUser&&auth.currentUser.uid===ADMIN_UID) loadUsers();
   show('screen-dashboard');
 }
-window.startNewSearch=function(){
+window.startNewSearch=async function(){
   sid=genId();props=[];est={};vd={};mot={};cNom='';iA=1;mI=1;imgD='';isAgent=true;viewMode='load';
   $('ci').value='';$('link-box-wrap').style.display='none';$('agent-title').textContent='Nueva búsqueda';
   $('btn-toggle').textContent='Ver respuestas';$('load-view').style.display='block';$('resp-view').style.display='none';
@@ -811,18 +811,6 @@ window.doLogout = async function(){
   show('screen-home');
 }
 
-window.showDashboard = function(){
-  // Check if already logged in
-  if(auth.currentUser){
-    await loadHist();renderDash();
-    const adminPanel=$('admin-panel');
-    if(adminPanel) adminPanel.style.display=auth.currentUser.uid===ADMIN_UID?'block':'none';
-    if(auth.currentUser.uid===ADMIN_UID) loadUsers();
-    show('screen-dashboard');
-  } else {
-    show('screen-login');
-  }
-}
 
 // ── USER MANAGEMENT (admin only) ──
 window.toggleAddUser = function(){
