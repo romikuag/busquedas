@@ -410,7 +410,7 @@ async function loadHist(){
   try{
     const timeoutPromise=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000));
     const snap=await Promise.race([db.collection('agentes').doc(auth.currentUser.uid).get(),timeoutPromise]);
-    hist=snap.exists()?(snap.data().busquedas||[]):[];
+    hist=snap.exists?(snap.data().busquedas||[]):[];
   }catch(e){hist=[];console.log('loadHist error:',e.message);}
 }
 async function saveHist(){
@@ -434,7 +434,7 @@ async function saveVisit(){if(!sid)return;try{await db.collection('busquedas').d
 function subscribe(){
   if(unsub)unsub();if(!sid)return;
   unsub=db.collection('busquedas').doc(sid).onSnapshot(snap=>{
-    if(!snap.exists())return;
+    if(!snap.exists)return;
     const d=snap.data();
     if(isAgent){est=d.est||{};vd=d.vd||{};mot=d.mot||{};if(viewMode==='resp')renderResp();}
     else{props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};cNom=d.cNom||'';mI=d.mI||1;renderClient();}
@@ -520,7 +520,7 @@ window.openSearch=async(id,name)=>{
   sid=id;cNom=name;isAgent=true;viewMode='load';showLoad(true);
   try{
     const snap=await db.collection('busquedas').doc(sid).get();
-    if(snap.exists()){const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};cNom=d.cNom||name;iA=d.iA||1;mI=d.mI||1;}
+    if(snap.exists){const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};cNom=d.cNom||name;iA=d.iA||1;mI=d.mI||1;}
     $('ci').value=cNom;$('agent-title').textContent=cNom;
     $('btn-toggle').textContent='Ver respuestas';$('load-view').style.display='block';$('resp-view').style.display='none';
     const url=`${location.origin}${location.pathname}?b=${sid}`;
@@ -535,7 +535,7 @@ window.openResp=async(id,name)=>{
   sid=id;cNom=name;isAgent=true;viewMode='resp';showLoad(true);
   try{
     const snap=await db.collection('busquedas').doc(sid).get();
-    if(snap.exists()){const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};cNom=d.cNom||name;mI=d.mI||1;}
+    if(snap.exists){const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};cNom=d.cNom||name;mI=d.mI||1;}
     $('agent-title').textContent=cNom;$('btn-toggle').textContent='Cargar props';
     $('load-view').style.display='none';$('resp-view').style.display='block';
     iF=1;renderResp();show('screen-agent');subscribe();await setHistAlert(id,false);
@@ -675,7 +675,7 @@ async function openClient(){
   showLoad(true);
   try{
     const snap=await db.collection('busquedas').doc(sid).get();
-    if(!snap.exists()){showLoad(false);toast('Código no encontrado');return;}
+    if(!snap.exists){showLoad(false);toast('Código no encontrado');return;}
     const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};cNom=d.cNom||'';mI=d.mI||1;
     show('screen-client');iF=1;renderClient();subscribe();
   }catch(e){toast('Error al cargar');console.error(e);}
