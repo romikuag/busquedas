@@ -402,8 +402,26 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
       <div class="ch-prog-bar"><div class="ch-prog-fill" id="pfill" style="width:0%"></div></div>
     </div>
   </div>
-  <div class="inst-nav" id="client-nav"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 1.25rem;background:var(--cream);border-bottom:0.5px solid var(--border)">
+  <div class="inst-nav" id="client-nav" style="padding:0;border:none;flex:1"></div>
+  <button class="btn-sm btn-sm-carbon" onclick="toggleClientResumen()" id="client-resumen-btn" style="margin-left:10px;background:var(--carbon);border:none;color:#fff;flex-shrink:0">📋 Resumen</button>
+</div>
   <div class="cards-area" id="client-cards"></div>
+  <!-- CLIENT RESUMEN -->
+  <div id="client-resumen-view" style="display:none">
+    <div class="resp-header">📋 Resumen de tu búsqueda</div>
+    <div class="resumen-module">
+      <div class="resumen-filter-row" id="client-resumen-filters">
+        <button class="res-filter-btn active" onclick="filterClientResumen('all',this)">Todas</button>
+        <button class="res-filter-btn" onclick="filterClientResumen('sin-respuesta',this)">Sin responder</button>
+        <button class="res-filter-btn" onclick="filterClientResumen('standby',this)">Stand by</button>
+        <button class="res-filter-btn" onclick="filterClientResumen('no',this)">Descartadas</button>
+        <button class="res-filter-btn" onclick="filterClientResumen('avisitar',this)">A visitar</button>
+        <button class="res-filter-btn" onclick="filterClientResumen('realizada',this)">Visita realizada</button>
+      </div>
+      <div id="client-resumen-list"></div>
+    </div>
+  </div>
   <div class="resumen">
     <div class="res-box res-box-v"><div class="res-num res-num-v" id="rv">0</div><div class="res-lbl">Coordinar visita</div></div>
     <div class="res-box res-box-s"><div class="res-num res-num-s" id="rs">0</div><div class="res-lbl">Stand by</div></div>
@@ -715,6 +733,63 @@ window.saveVisit=async function(id){
   vd[id]={fc:fc?fc.value:'',fv:fv?fv.value:'',hv:hv?hv.value:'',dv:dv?dv.value:'',comentario:cm?cm.value:'',saved:new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
   await saveVisit_();toast('✓ Visita guardada');renderResp();
 }
+// ── CLIENT RESUMEN ──
+let clientResumenFilter='all';
+let clientResumenOpen=false;
+
+window.toggleClientResumen=function(){
+  clientResumenOpen=!clientResumenOpen;
+  const rv=$('client-resumen-view');
+  const cv=$('client-cards');
+  const btn=$('client-resumen-btn');
+  if(clientResumenOpen){
+    rv.style.display='block';
+    cv.style.display='none';
+    btn.textContent='← Ver propiedades';
+    clientResumenFilter='all';
+    document.querySelectorAll('#client-resumen-filters .res-filter-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+    renderClientResumen();
+  } else {
+    rv.style.display='none';
+    cv.style.display='block';
+    btn.textContent='📋 Resumen';
+  }
+}
+
+window.filterClientResumen=function(f,btn){
+  clientResumenFilter=f;
+  document.querySelectorAll('#client-resumen-filters .res-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderClientResumen();
+}
+
+function renderClientResumen(){
+  const el=$('client-resumen-list');if(!el)return;
+  if(!props.length){el.innerHTML='<div class="empty-msg">No hay propiedades cargadas</div>';return;}
+  const order={'avisitar':0,'realizada':1,'standby':2,'sin-respuesta':3,'no':4};
+  const sorted=[...props].sort((a,b)=>(order[getPropStatus(a)]||3)-(order[getPropStatus(b)]||3));
+  const filtered=clientResumenFilter==='all'?sorted:sorted.filter(p=>getPropStatus(p)===clientResumenFilter);
+  if(!filtered.length){el.innerHTML='<div class="empty-msg">No hay propiedades en esta categoría</div>';return;}
+  el.innerHTML=filtered.map(p=>{
+    const status=getPropStatus(p);
+    const vinfo=vd[p.id]||{};
+    let extraInfo='';
+    if(status==='avisitar'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:var(--green-txt);margin-left:6px">📅 ${vinfo.fv}${vinfo.hv?' — '+vinfo.hv:''}</span>`;
+    if(status==='avisitar'&&vinfo.dv) extraInfo+=`<div style="font-size:11px;color:var(--muted)">📍 ${vinfo.dv}</div>`;
+    if(status==='realizada'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:#1E8449;margin-left:6px">Visitada ${vinfo.fv}</span>`;
+    if(status==='realizada'&&vinfo.comentario) extraInfo+=`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${vinfo.comentario.substring(0,60)}${vinfo.comentario.length>60?'...':''}"</div>`;
+    return `<div class="prop-row">
+      <div class="prop-row-thumb">${p.img?`<img src="${p.img}"/>`:'📷'}</div>
+      <div class="prop-row-info">
+        <div class="prop-row-ubic">${p.ubic||'Sin ubicación'}</div>
+        <div class="prop-row-price">${p.precio||''}${p.precio&&p.metraje?' · ':''}${p.metraje||''}${extraInfo}</div>
+      </div>
+      <div class="prop-row-status">${getStatusPill(status)}</div>
+      ${p.link?`<div class="prop-row-link"><a href="${p.link}" target="_blank">Ver →</a></div>`:''}
+    </div>`;
+  }).join('');
+}
+
 // ── RESUMEN MODULE ──
 let resumenFilter='all';
 
@@ -914,6 +989,8 @@ window.cnConsulta=async function(id){
 }
 window.cnNo=async function(id){const t=($('mo-'+id)||{}).value||'';mot[id]=t;est[id]='no';await saveResp();renderClient();toast('✓ Guardado');}
 function upResClient(){
+  // Refresh client resumen if open
+  if(clientResumenOpen) renderClientResumen();
   const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))&&val!=='no-pending').map(([,val])=>val),tot=props.length,res=v.length;
   const el1=$('rv');if(el1)el1.textContent=v.filter(x=>x==='visita').length;
   const el2=$('rs');if(el2)el2.textContent=v.filter(x=>x==='standby').length;
@@ -983,12 +1060,13 @@ window.createUser = async function(){
   showLoad(true);
   try{
     // Use secondary app to create user without affecting current session
-    const app2=firebase.initializeApp({apiKey:"AIzaSyBa3VDlOtpnBFH5ox3_8C8DMIfN3gyDVME",authDomain:"romina-kutin-busquedas.firebaseapp.com",projectId:"romina-kutin-busquedas",storageBucket:"romina-kutin-busquedas.firebasestorage.app",messagingSenderId:"385762198417",appId:"1:385762198417:web:a37e168da005c8e3fb5030"},"secondary");
+    let app2;
+    try{ app2=firebase.app("secondary"); }
+    catch(e){ app2=firebase.initializeApp({apiKey:"AIzaSyBa3VDlOtpnBFH5ox3_8C8DMIfN3gyDVME",authDomain:"romina-kutin-busquedas.firebaseapp.com",projectId:"romina-kutin-busquedas",storageBucket:"romina-kutin-busquedas.firebasestorage.app",messagingSenderId:"385762198417",appId:"1:385762198417:web:a37e168da005c8e3fb5030"},"secondary"); }
     const auth2=app2.auth();
     const cred=await auth2.createUserWithEmailAndPassword(email,pass);
     const newUid=cred.user.uid;
     await auth2.signOut();
-    // app2 cleanup not needed in compat
     // Save user data in Firestore
     await db.collection('users').doc(newUid).set({email,name,role:'agent',createdAt:Date.now()});
     toast('✓ Usuario creado: '+name);
