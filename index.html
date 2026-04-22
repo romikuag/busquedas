@@ -196,6 +196,26 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 .ch-prog-bar{height:1.5px;background:rgba(255,255,255,0.12);border-radius:2px}
 .ch-prog-fill{height:1.5px;background:var(--gold-mid);border-radius:2px;transition:width 0.5s}
 .resp-header{background:var(--gold-light);border-bottom:0.5px solid var(--gold-mid);padding:10px 1.25rem;font-size:12px;color:#7A5C2E;font-weight:500}
+/* RESUMEN MODULE */
+.resumen-module{padding:1.25rem;max-width:700px;margin:0 auto}
+.resumen-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.res-filter-btn{padding:5px 14px;border:0.5px solid var(--border);border-radius:20px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;background:transparent;color:var(--carbon)}
+.res-filter-btn.active{background:var(--carbon);color:#fff;border-color:var(--carbon)}
+.prop-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:10px;margin-bottom:7px}
+.prop-row-thumb{width:52px;height:32px;border-radius:5px;flex-shrink:0;overflow:hidden;background:var(--gold-light);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--gold)}
+.prop-row-thumb img{width:52px;height:32px;object-fit:cover;display:block}
+.prop-row-info{flex:1;min-width:0}
+.prop-row-ubic{font-size:13px;font-weight:500;color:var(--carbon);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prop-row-price{font-size:11px;color:var(--muted)}
+.prop-row-status{flex-shrink:0}
+.status-pill{font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.sp-none{background:var(--cream);color:var(--muted);border:0.5px solid var(--border)}
+.sp-no{background:var(--red-pale);color:var(--red-txt)}
+.sp-standby{background:var(--amber-pale);color:var(--amber-txt)}
+.sp-visita{background:var(--green-pale);color:var(--green-txt)}
+.sp-realizada{background:#D5F5E3;color:#1E8449}
+.sp-avisitar{background:#D1F2EB;color:#117A65}
+.prop-row-link a{font-size:11px;color:#185FA5;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -285,6 +305,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
     <div><div class="tb-brand" id="agent-title">Nueva búsqueda</div><div class="tb-sub">Panel agente</div></div>
     <div class="tb-btns">
       <button class="btn-sm btn-sm-gold" id="btn-toggle" onclick="toggleView()">Ver respuestas</button>
+      <button class="btn-sm btn-sm-gold" id="btn-resumen" onclick="toggleResumen()">📋 Resumen</button>
       <button class="btn-sm btn-sm-gold" onclick="copyLink()">🔗 Link</button>
       <button class="btn-sm btn-sm-light" onclick="backToDash()">← Volver</button>
     </div>
@@ -349,6 +370,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
       <div class="res-box res-box-v"><div class="res-num res-num-v" id="arv">0</div><div class="res-lbl">Coordinar visita</div></div>
       <div class="res-box res-box-s"><div class="res-num res-num-s" id="ars">0</div><div class="res-lbl">Stand by</div></div>
       <div class="res-box res-box-n"><div class="res-num res-num-n" id="arn">0</div><div class="res-lbl">No me interesa</div></div>
+    </div>
+  </div>
+  <!-- RESUMEN VIEW -->
+  <div id="resumen-view" style="display:none">
+    <div class="resp-header">📋 Resumen de búsqueda — estado de todas las propiedades</div>
+    <div class="resumen-module">
+      <div class="resumen-filter-row" id="resumen-filters">
+        <button class="res-filter-btn active" onclick="filterResumen('all',this)">Todas</button>
+        <button class="res-filter-btn" onclick="filterResumen('sin-respuesta',this)">Sin respuesta</button>
+        <button class="res-filter-btn" onclick="filterResumen('standby',this)">Stand by</button>
+        <button class="res-filter-btn" onclick="filterResumen('no',this)">Descartadas</button>
+        <button class="res-filter-btn" onclick="filterResumen('avisitar',this)">A visitar</button>
+        <button class="res-filter-btn" onclick="filterResumen('realizada',this)">Visita realizada</button>
+      </div>
+      <div id="resumen-list"></div>
     </div>
   </div>
 </div>
@@ -569,8 +605,14 @@ window.addInst=function(){
   const n=mI;nb.onclick=()=>selInst(n);row.insertBefore(nb,ab);selInst(mI);
 }
 window.toggleView=function(){
-  if(viewMode==='load'){viewMode='resp';$('btn-toggle').textContent='Cargar props';$('load-view').style.display='none';$('resp-view').style.display='block';iF=1;renderResp();}
-  else{viewMode='load';$('btn-toggle').textContent='Ver respuestas';$('load-view').style.display='block';$('resp-view').style.display='none';}
+  $('resumen-view').style.display='none';
+  if(viewMode==='load'||viewMode==='resumen'){
+    viewMode='resp';$('btn-toggle').textContent='Cargar props';
+    $('load-view').style.display='none';$('resp-view').style.display='block';iF=1;renderResp();
+  } else {
+    viewMode='load';$('btn-toggle').textContent='Ver respuestas';
+    $('load-view').style.display='block';$('resp-view').style.display='none';
+  }
 }
 
 // IMAGE
@@ -661,17 +703,7 @@ function renderResp(){
           <div class="resp-btn rb-vi${e==='visita'?' sel':''}">✓ Coordinar visita</div>
         </div>
         ${expandHtml}
-        ${con[p.id]?`
-        <div class="expand-zone" style="border-top:0.5px solid var(--border)">
-          <div class="exp-inner">
-            <div class="exp-lbl" style="color:#1A5276">💬 Consulta del cliente</div>
-            <div style="background:#D6EAF8;border-radius:8px;padding:8px 12px;font-size:13px;color:#1A5276;margin-bottom:8px">${con[p.id]}</div>
-            <div class="exp-lbl">Tu respuesta</div>
-            <textarea class="exp-textarea" id="cr-${p.id}" placeholder="Respondé la consulta...">${conResp[p.id]||''}</textarea>
-            <button class="btn-confirm2" onclick="agentRespConsulta(${p.id})" style="background:#2E86C1">Guardar respuesta</button>
-            ${conResp[p.id]?`<div class="saved-tag" style="color:#1A5276">✓ Respondida</div>`:''}
-          </div>
-        </div>`:''}
+
       </div>`;
     });
   });
@@ -683,6 +715,92 @@ window.saveVisit=async function(id){
   vd[id]={fc:fc?fc.value:'',fv:fv?fv.value:'',hv:hv?hv.value:'',dv:dv?dv.value:'',comentario:cm?cm.value:'',saved:new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
   await saveVisit_();toast('✓ Visita guardada');renderResp();
 }
+// ── RESUMEN MODULE ──
+let resumenFilter='all';
+
+window.toggleResumen=function(){
+  const rv=$('resp-view'),lv=$('load-view'),remv=$('resumen-view');
+  const isOpen=remv.style.display!=='none';
+  // Hide all views first
+  lv.style.display='none';rv.style.display='none';remv.style.display='none';
+  $('btn-toggle').textContent='Ver respuestas';
+  $('btn-resumen').textContent='📋 Resumen';
+  if(isOpen){
+    // Was open, go back to load view
+    lv.style.display='block';viewMode='load';
+  } else {
+    // Open resumen
+    remv.style.display='block';viewMode='resumen';
+    resumenFilter='all';
+    document.querySelectorAll('.res-filter-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector('.res-filter-btn').classList.add('active');
+    renderResumen();
+  }
+}
+
+window.filterResumen=function(f,btn){
+  resumenFilter=f;
+  document.querySelectorAll('.res-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderResumen();
+}
+
+function getPropStatus(p){
+  const e=est[p.id]||'';
+  const vinfo=vd[p.id]||{};
+  if(e==='visita'){
+    // Check if visit date has passed
+    if(vinfo.fv){
+      const visitDate=new Date(vinfo.fv);
+      visitDate.setHours(23,59,59);
+      if(visitDate < new Date()) return 'realizada';
+    }
+    return 'avisitar';
+  }
+  if(e==='standby') return 'standby';
+  if(e==='no'||e==='no-pending') return 'no';
+  return 'sin-respuesta';
+}
+
+function getStatusPill(status){
+  const map={
+    'sin-respuesta':{cls:'sp-none',label:'Sin respuesta'},
+    'standby':{cls:'sp-standby',label:'◎ Stand by'},
+    'no':{cls:'sp-no',label:'✕ Descartada'},
+    'avisitar':{cls:'sp-avisitar',label:'📅 A visitar'},
+    'realizada':{cls:'sp-realizada',label:'✓ Visita realizada'},
+  };
+  const s=map[status]||map['sin-respuesta'];
+  return `<span class="status-pill ${s.cls}">${s.label}</span>`;
+}
+
+function renderResumen(){
+  const el=$('resumen-list');if(!el)return;
+  if(!props.length){el.innerHTML='<div class="empty-msg">No hay propiedades cargadas</div>';return;}
+  // Sort: visita first, then standby, then sin-respuesta, then no
+  const order={'avisitar':0,'realizada':1,'standby':2,'sin-respuesta':3,'no':4};
+  const sorted=[...props].sort((a,b)=>(order[getPropStatus(a)]||3)-(order[getPropStatus(b)]||3));
+  const filtered=resumenFilter==='all'?sorted:sorted.filter(p=>getPropStatus(p)===resumenFilter);
+  if(!filtered.length){el.innerHTML='<div class="empty-msg">No hay propiedades en esta categoría</div>';return;}
+  el.innerHTML=filtered.map(p=>{
+    const status=getPropStatus(p);
+    const vinfo=vd[p.id]||{};
+    let extraInfo='';
+    if(status==='avisitar'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:var(--green-txt);margin-left:6px">📅 ${vinfo.fv}${vinfo.hv?' '+vinfo.hv:''}</span>`;
+    if(status==='realizada'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:#1E8449;margin-left:6px">Visitada ${vinfo.fv}</span>`;
+    if(status==='realizada'&&vinfo.comentario) extraInfo+=`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${vinfo.comentario.substring(0,60)}${vinfo.comentario.length>60?'...':''}"</div>`;
+    return `<div class="prop-row">
+      <div class="prop-row-thumb">${p.img?`<img src="${p.img}"/>`:'📷'}</div>
+      <div class="prop-row-info">
+        <div class="prop-row-ubic">${p.ubic||'Sin ubicación'}</div>
+        <div class="prop-row-price">${p.precio||''}${p.precio&&p.metraje?' · ':''}${p.metraje||''}${extraInfo}</div>
+      </div>
+      <div class="prop-row-status">${getStatusPill(status)}</div>
+      ${p.link?`<div class="prop-row-link"><a href="${p.link}" target="_blank">Ver →</a></div>`:''}
+    </div>`;
+  }).join('');
+}
+
 window.agentRespConsulta=async function(id){
   const t=document.getElementById('cr-'+id);
   if(!t)return;
@@ -763,23 +881,13 @@ function renderClient(){
           ${p.desc?`<div class="card-meta">${p.desc}</div>`:''}
           ${p.link?`<a class="card-link" href="${p.link}" target="_blank">Ver publicación →</a>`:''}
         </div>
-        <div class="card-actions">
-          <div class="action-row">
-            <button class="act-btn btn-no${e==='no'?' sel':''}" onclick="cAcc(${p.id},'no')">✕ No me interesa</button>
-            <button class="act-btn btn-sb${e==='standby'?' sel':''}" onclick="cAcc(${p.id},'standby')">◎ Stand by</button>
-            <button class="act-btn btn-vi${e==='visita'?' sel':''}" onclick="cAcc(${p.id},'visita')">✓ Coordinar visita</button>
-          </div>
-          <button class="act-btn btn-co${con[p.id]?' sel':''}" onclick="toggleConForm(${p.id})" style="width:100%;margin-top:6px">💬 Hacer consulta${con[p.id]?' ✓':''}</button>
-        </div>
+        <div class="card-actions"><div class="action-row">
+          <button class="act-btn btn-no${e==='no'?' sel':''}" onclick="cAcc(${p.id},'no')">✕ No me interesa</button>
+          <button class="act-btn btn-sb${e==='standby'?' sel':''}" onclick="cAcc(${p.id},'standby')">◎ Stand by</button>
+          <button class="act-btn btn-vi${e==='visita'?' sel':''}" onclick="cAcc(${p.id},'visita')">✓ Coordinar visita</button>
+        </div></div>
         ${expandHtml}
-        <div class="expand-zone" id="cex-${p.id}" style="display:${con[p.id]?'block':'none'}">
-          <div class="exp-inner">
-            <div class="exp-lbl" style="color:#1A5276">Tu consulta</div>
-            <textarea class="exp-textarea" id="cq-${p.id}" placeholder="Ej: ¿La cochera es cubierta? ¿Las expensas están actualizadas?...">${con[p.id]||''}</textarea>
-            <button class="btn-confirm2" onclick="cnConsulta(${p.id})" style="background:#2E86C1">${con[p.id]?'Actualizar consulta':'Enviar consulta'}</button>
-            ${conResp[p.id]?`<div class="consulta-resp-box" style="margin-top:10px">✅ <strong>Respuesta del agente:</strong><br>${conResp[p.id]}</div>`:''}
-          </div>
-        </div>
+
       </div>`;
     });
   });
@@ -899,8 +1007,6 @@ async function loadUsers(){
   const el=$('users-list');if(!el)return;
   el.innerHTML='<div class="empty-msg" style="padding:1rem 0">Cargando...</div>';
   try{
-    const snap=await db.collection('users').doc('__list__').get();
-    // Load all users from Firestore
     const querySnap=await db.collection('users').get();
     const users=[];
     querySnap.forEach(d=>{if(d.id!=='__list__')users.push({id:d.id,...d.data()});});
