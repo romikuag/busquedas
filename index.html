@@ -148,6 +148,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 .action-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 .act-btn{padding:9px 4px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;text-align:center;line-height:1.3;border:1.5px solid;transition:all 0.2s}
 .act-btn:active{transform:scale(0.97)}
+.btn-co{border-color:#85C1E9;background:transparent;color:#1A5276}
+.btn-co.sel{background:#D6EAF8;border-color:#5DADE2;color:#1A5276;box-shadow:0 0 0 1.5px #5DADE2}
+.rb-co{border-color:#85C1E9;background:transparent;color:#1A5276;pointer-events:none}
+.rb-co.sel{background:#D6EAF8;border-color:#5DADE2;color:#1A5276}
+.consulta-resp-box{background:#D6EAF8;border-radius:8px;padding:10px 12px;font-size:12px;color:#1A5276;line-height:1.6;margin-bottom:4px}
 .btn-no{border-color:#EAB0B0;background:transparent;color:#A03030}
 .btn-sb{border-color:#E8CC70;background:transparent;color:#8A6400}
 .btn-vi{border-color:#80CC90;background:transparent;color:#1E6830}
@@ -159,15 +164,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 .rb-no{border-color:#EAB0B0;background:transparent;color:#A03030}
 .rb-sb{border-color:#E8CC70;background:transparent;color:#8A6400}
 .rb-vi{border-color:#80CC90;background:transparent;color:#1E6830}
-.rb-co{border-color:#90C4E8;background:transparent;color:#1A5276}
 .rb-no.sel{background:var(--red-pale);border-color:#D06060;color:var(--red-txt)}
 .rb-sb.sel{background:var(--amber-pale);border-color:#DDB830;color:var(--amber-txt)}
 .rb-vi.sel{background:var(--green-pale);border-color:#50A860;color:var(--green-txt)}
-.rb-co.sel{background:#D6EAF8;border-color:#5DADE2;color:#1A5276}
-.btn-co{border-color:#90C4E8;background:transparent;color:#1A5276}
-.btn-co.sel{background:#D6EAF8;border-color:#5DADE2;color:#1A5276;box-shadow:0 0 0 1.5px #5DADE2}
-.consulta-box{margin:0 14px 12px;background:#D6EAF8;border-radius:8px;padding:10px 12px;font-size:12px;color:#1A5276;line-height:1.6}
-.consulta-respondida{margin:0 14px 12px;background:#D6EAF8;border-radius:8px;padding:10px 12px;font-size:12px;color:#1A5276;line-height:1.6}
 .expand-zone{border-top:0.5px solid var(--border)}
 .exp-inner{padding:12px 14px}
 .exp-lbl{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;margin-top:10px}
@@ -207,11 +206,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 <!-- LOGIN -->
 <div class="screen" id="screen-login">
   <div class="home-wrap">
-    <div class="home-logo" style="background:#1E1C1A;border-color:#1E1C1A;overflow:hidden;padding:0"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <rect width="100" height="100" fill="#1E1C1A" rx="8"/>
-  <text x="50" y="58" font-family="Arial Black,Arial" font-weight="900" font-size="38" fill="white" text-anchor="middle" letter-spacing="-1">PS</text>
-  <polyline points="20,45 50,20 80,45" fill="none" stroke="white" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-</svg></div>
+    <div class="home-logo"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
     <div class="home-brand">Pallarols Santander</div>
     <div class="home-sub">Panel agente</div>
     <div class="home-card">
@@ -228,11 +223,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 <!-- HOME -->
 <div class="screen active" id="screen-home">
   <div class="home-wrap">
-    <div class="home-logo" style="background:#1E1C1A;border-color:#1E1C1A;overflow:hidden;padding:0"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <rect width="100" height="100" fill="#1E1C1A" rx="8"/>
-  <text x="50" y="58" font-family="Arial Black,Arial" font-weight="900" font-size="38" fill="white" text-anchor="middle" letter-spacing="-1">PS</text>
-  <polyline points="20,45 50,20 80,45" fill="none" stroke="white" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-</svg></div>
+    <div class="home-logo"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
     <div class="home-brand">Pallarols Santander</div>
     <div class="home-sub">Búsqueda de propiedades</div>
     <div class="home-card">
@@ -252,11 +243,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 <!-- DASHBOARD -->
 <div class="screen" id="screen-dashboard">
   <div class="top-bar">
-    <div class="tb-logo" style="background:#1E1C1A;border-color:#1E1C1A;overflow:hidden;padding:0"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <rect width="100" height="100" fill="#1E1C1A" rx="8"/>
-  <text x="50" y="58" font-family="Arial Black,Arial" font-weight="900" font-size="38" fill="white" text-anchor="middle" letter-spacing="-1">PS</text>
-  <polyline points="20,45 50,20 80,45" fill="none" stroke="white" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-</svg></div>
+    <div class="tb-logo"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
     <div><div class="tb-brand">Pallarols Santander</div><div class="tb-sub">Mis búsquedas</div></div>
     <div class="tb-btns">
       <button class="btn-sm btn-sm-green" onclick="startNewSearch()">+ Nueva búsqueda</button>
@@ -294,11 +281,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 <!-- AGENT PANEL -->
 <div class="screen" id="screen-agent">
   <div class="top-bar">
-    <div class="tb-logo" style="background:#1E1C1A;border-color:#1E1C1A;overflow:hidden;padding:0"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <rect width="100" height="100" fill="#1E1C1A" rx="8"/>
-  <text x="50" y="58" font-family="Arial Black,Arial" font-weight="900" font-size="38" fill="white" text-anchor="middle" letter-spacing="-1">PS</text>
-  <polyline points="20,45 50,20 80,45" fill="none" stroke="white" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-</svg></div>
+    <div class="tb-logo"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
     <div><div class="tb-brand" id="agent-title">Nueva búsqueda</div><div class="tb-sub">Panel agente</div></div>
     <div class="tb-btns">
       <button class="btn-sm btn-sm-gold" id="btn-toggle" onclick="toggleView()">Ver respuestas</button>
@@ -374,11 +357,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 <div class="screen" id="screen-client">
   <div class="client-header">
     <div class="ch-brand">
-      <div class="tb-logo" style="background:#1E1C1A;border-color:#1E1C1A;overflow:hidden;padding:0"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <rect width="100" height="100" fill="#1E1C1A" rx="8"/>
-  <text x="50" y="58" font-family="Arial Black,Arial" font-weight="900" font-size="38" fill="white" text-anchor="middle" letter-spacing="-1">PS</text>
-  <polyline points="20,45 50,20 80,45" fill="none" stroke="white" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-</svg></div>
+      <div class="tb-logo"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:var(--gold)"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
       <div><div class="ch-brand-name">Pallarols Santander</div><div class="ch-brand-sub">Búsqueda de propiedades</div></div>
     </div>
     <div class="ch-greeting">Hola, <strong id="cvn">-</strong>. Revisá las propiedades y marcá tu interés.</div>
@@ -654,11 +633,7 @@ function renderResp(){
       const e=est[p.id]||'',v=vd[p.id]||{},m=mot[p.id]||'';
       let expandHtml='';
       if(e==='no'&&m){expandHtml=`<div class="motivo-box">💬 Motivo del cliente: ${m}</div>`;}
-      if(con[p.id]){
-        const cr=conResp[p.id]||'';
-        expandHtml+=`<div class="consulta-box">💬 <strong>Tu consulta:</strong> ${con[p.id]}${cr?`<br><br>✅ <strong>Respuesta del agente:</strong> ${cr}`:''}</div>`;
-      }
-      if(e==='visita'){
+      else if(e==='visita'){
         expandHtml=`<div class="expand-zone"><div class="exp-inner">
           <div class="exp-lbl">Contacto al colega</div>
           <input type="date" class="exp-input" id="afc-${p.id}" value="${v.fc||''}" style="margin-bottom:8px"/>
@@ -680,21 +655,23 @@ function renderResp(){
           ${p.desc?`<div class="card-meta">${p.desc}</div>`:''}
           ${p.link?`<a class="card-link" href="${p.link}" target="_blank">Ver publicación →</a>`:''}
         </div>
-        <div class="resp-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="resp-row">
           <div class="resp-btn rb-no${e==='no'?' sel':''}">✕ No me interesa</div>
           <div class="resp-btn rb-sb${e==='standby'?' sel':''}">◎ Stand by</div>
           <div class="resp-btn rb-vi${e==='visita'?' sel':''}">✓ Coordinar visita</div>
         </div>
-        ${con[p.id]?`<div style="padding:0 14px 8px"><div class="resp-btn rb-co sel" style="width:100%;display:block;text-align:center">💬 Consulta enviada</div></div>`:''}
         ${expandHtml}
-        ${con[p.id]?`<div class="expand-zone" style="border-top:0.5px solid var(--border)"><div class="exp-inner">
-          <div class="exp-lbl" style="color:#1A5276">💬 Consulta del cliente</div>
-          <div style="background:#D6EAF8;border-radius:8px;padding:8px 12px;font-size:13px;color:#1A5276;margin-bottom:8px">${con[p.id]}</div>
-          <div class="exp-lbl">Respuesta del agente</div>
-          <textarea class="exp-textarea" id="cr-${p.id}" placeholder="Respondé la consulta del cliente...">${conResp[p.id]||''}</textarea>
-          <button class="btn-confirm2" onclick="agentRespConsulta(${p.id})" style="background:#2E86C1">Guardar respuesta</button>
-          ${conResp[p.id]?`<div class="saved-tag" style="color:#1A5276">✓ Respondida</div>`:''}
-        </div></div>`:''}
+        ${con[p.id]?`
+        <div class="expand-zone" style="border-top:0.5px solid var(--border)">
+          <div class="exp-inner">
+            <div class="exp-lbl" style="color:#1A5276">💬 Consulta del cliente</div>
+            <div style="background:#D6EAF8;border-radius:8px;padding:8px 12px;font-size:13px;color:#1A5276;margin-bottom:8px">${con[p.id]}</div>
+            <div class="exp-lbl">Tu respuesta</div>
+            <textarea class="exp-textarea" id="cr-${p.id}" placeholder="Respondé la consulta...">${conResp[p.id]||''}</textarea>
+            <button class="btn-confirm2" onclick="agentRespConsulta(${p.id})" style="background:#2E86C1">Guardar respuesta</button>
+            ${conResp[p.id]?`<div class="saved-tag" style="color:#1A5276">✓ Respondida</div>`:''}
+          </div>
+        </div>`:''}
       </div>`;
     });
   });
@@ -706,14 +683,17 @@ window.saveVisit=async function(id){
   vd[id]={fc:fc?fc.value:'',fv:fv?fv.value:'',hv:hv?hv.value:'',dv:dv?dv.value:'',comentario:cm?cm.value:'',saved:new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
   await saveVisit_();toast('✓ Visita guardada');renderResp();
 }
-async function saveVisit_(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({vd,updatedAt:Date.now()});}catch(e){console.error(e);}}
 window.agentRespConsulta=async function(id){
   const t=document.getElementById('cr-'+id);
   if(!t)return;
   conResp[id]=t.value;
-  try{await db.collection('busquedas').doc(sid).update({conResp,updatedAt:Date.now()});toast('✓ Respuesta guardada');renderResp();}
-  catch(e){toast('Error al guardar');console.error(e);}
+  try{
+    await db.collection('busquedas').doc(sid).update({conResp,updatedAt:Date.now()});
+    toast('✓ Respuesta guardada');
+    renderResp();
+  }catch(e){toast('Error al guardar');console.error(e);}
 }
+async function saveVisit_(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({vd,updatedAt:Date.now()});}catch(e){console.error(e);}}
 function upResAgent(){const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))&&val!=='no-pending').map(([,val])=>val);const el1=$('arv');if(el1)el1.textContent=v.filter(x=>x==='visita').length;const el2=$('ars');if(el2)el2.textContent=v.filter(x=>x==='standby').length;const el3=$('arn');if(el3)el3.textContent=v.filter(x=>x==='no').length;}
 
 // CLIENT VIEW
@@ -745,8 +725,10 @@ function renderClient(){
       let expandHtml='';
       if(e==='no'){
         if(isPending){
+          // Still filling in reason - show form with confirm button
           expandHtml=`<div class="expand-zone"><div class="exp-inner"><div class="exp-lbl">¿Por qué no te interesa?</div><textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence...">${mot[p.id]||''}</textarea><button class="btn-confirm2" onclick="cnNo(${p.id})">Confirmar</button></div></div>`;
         } else {
+          // Already confirmed - show saved motivo with edit option
           expandHtml=`<div class="expand-zone"><div class="exp-inner">
             <div class="exp-lbl">Motivo</div>
             <textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence...">${mot[p.id]||''}</textarea>
@@ -754,15 +736,6 @@ function renderClient(){
           </div></div>`;
         }
       }
-      // Consulta form - always show if button was clicked (no est change, just show)
-      if(!e&&con[p.id]===undefined&&document.getElementById&&false){} // placeholder
-      // Show consulta form inline below buttons via separate expand
-      const showConForm=!con[p.id]; // show form if no consulta yet
-      const conExpandHtml=`<div class="expand-zone" id="cex-${p.id}" style="display:none"><div class="exp-inner">
-        <div class="exp-lbl">Tu consulta</div>
-        <textarea class="exp-textarea" id="cq-${p.id}" placeholder="Ej: ¿La cochera es cubierta? ¿Las expensas están actualizadas?...">${con[p.id]||''}</textarea>
-        <button class="btn-confirm2" onclick="cnConsulta(${p.id})" style="background:#2E86C1">${con[p.id]?'Actualizar consulta':'Enviar consulta'}</button>
-      </div></div>`;
       else if(e==='visita'){
         const v=vd[p.id]||{};
         const hasData=v.fv||v.hv||v.dv||v.comentario;
@@ -796,45 +769,42 @@ function renderClient(){
             <button class="act-btn btn-sb${e==='standby'?' sel':''}" onclick="cAcc(${p.id},'standby')">◎ Stand by</button>
             <button class="act-btn btn-vi${e==='visita'?' sel':''}" onclick="cAcc(${p.id},'visita')">✓ Coordinar visita</button>
           </div>
-          <div style="margin-top:6px">
-            <button class="act-btn btn-co${con[p.id]?' sel':''}" onclick="cAcc(${p.id},'consulta')" style="width:100%">💬 Hacer consulta</button>
-          </div>
+          <button class="act-btn btn-co${con[p.id]?' sel':''}" onclick="toggleConForm(${p.id})" style="width:100%;margin-top:6px">💬 Hacer consulta${con[p.id]?' ✓':''}</button>
         </div>
         ${expandHtml}
-        ${conExpandHtml}
+        <div class="expand-zone" id="cex-${p.id}" style="display:${con[p.id]?'block':'none'}">
+          <div class="exp-inner">
+            <div class="exp-lbl" style="color:#1A5276">Tu consulta</div>
+            <textarea class="exp-textarea" id="cq-${p.id}" placeholder="Ej: ¿La cochera es cubierta? ¿Las expensas están actualizadas?...">${con[p.id]||''}</textarea>
+            <button class="btn-confirm2" onclick="cnConsulta(${p.id})" style="background:#2E86C1">${con[p.id]?'Actualizar consulta':'Enviar consulta'}</button>
+            ${conResp[p.id]?`<div class="consulta-resp-box" style="margin-top:10px">✅ <strong>Respuesta del agente:</strong><br>${conResp[p.id]}</div>`:''}
+          </div>
+        </div>
       </div>`;
     });
   });
   $('client-cards').innerHTML=h;upResClient();
-  // If consulta already sent, auto-show it
-  props.forEach(p=>{
-    if(con[p.id]){
-      const el=document.getElementById('cex-'+p.id);
-      if(el) el.style.display='block';
-    }
-  });
 }
 window.cfilt=n=>{iF=n;renderClient();}
 window.cAcc=async(id,tipo)=>{
-  if(tipo==='consulta'){
-    // Toggle consulta form
-    const el=document.getElementById('cex-'+id);
-    if(el) el.style.display=el.style.display==='none'?'block':'none';
-    return;
-  }
   if(est[id]===tipo&&tipo==='standby'){delete est[id];renderClient();await saveResp();return;}
+  // For 'no': set pending state (shows form but doesn't count yet)
   if(tipo==='no'){est[id]='no-pending';renderClient();return;}
   est[id]=tipo;renderClient();await saveResp();
 }
-window.cnNo=async function(id){const t=($('mo-'+id)||{}).value||'';mot[id]=t;est[id]='no';await saveResp();renderClient();toast('✓ Guardado');}
+window.toggleConForm=function(id){
+  const el=document.getElementById('cex-'+id);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
 window.cnConsulta=async function(id){
-  const t=($('cq-'+id)||{}).value||'';
+  const t=(document.getElementById('cq-'+id)||{}).value||'';
   if(!t.trim()){toast('Escribí tu consulta');return;}
   con[id]=t;
   await saveResp();
   renderClient();
   toast('✓ Consulta enviada');
 }
+window.cnNo=async function(id){const t=($('mo-'+id)||{}).value||'';mot[id]=t;est[id]='no';await saveResp();renderClient();toast('✓ Guardado');}
 function upResClient(){
   const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))&&val!=='no-pending').map(([,val])=>val),tot=props.length,res=v.length;
   const el1=$('rv');if(el1)el1.textContent=v.filter(x=>x==='visita').length;
