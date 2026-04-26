@@ -695,21 +695,6 @@ function renderResp(){
       let expandHtml='';
       if(e==='no'&&m){expandHtml=`<div class="motivo-box">💬 Motivo: ${m}</div>`;}
       if(e==='standby'&&sbMot[p.id]){expandHtml=`<div class="motivo-box" style="background:var(--amber-pale);color:var(--amber-txt)">💬 Comentario: ${sbMot[p.id]}</div>`;}
-      else if(e==='standby'){
-        if(isSbPending){
-          expandHtml=`<div class="expand-zone"><div class="exp-inner">
-            <div class="exp-lbl">Comentarios / consulta (opcional)</div>
-            <textarea class="exp-textarea" id="sb-${p.id}" placeholder="Ej: Quiero pensar el precio, quiero ver otras opciones primero...">${sbMot[p.id]||''}</textarea>
-            <button class="btn-confirm2" onclick="cnStandby(${p.id})" style="background:#E6A817">Confirmar stand by</button>
-          </div></div>`;
-        } else {
-          expandHtml=`<div class="expand-zone"><div class="exp-inner">
-            <div class="exp-lbl">Comentario</div>
-            <textarea class="exp-textarea" id="sb-${p.id}">${sbMot[p.id]||''}</textarea>
-            <button class="btn-confirm2" onclick="cnStandby(${p.id})" style="background:var(--muted)">Guardar cambio</button>
-          </div></div>`;
-        }
-      }
       else if(e==='visita'){
         expandHtml=`<div class="expand-zone"><div class="exp-inner">
           <div class="exp-lbl">Contacto al colega</div>
@@ -935,14 +920,27 @@ function renderClient(){
       let expandHtml='';
       if(e==='no'){
         if(isPending){
-          // Still filling in reason - show form with confirm button
           expandHtml=`<div class="expand-zone"><div class="exp-inner"><div class="exp-lbl">¿Por qué no te interesa?</div><textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence...">${mot[p.id]||''}</textarea><button class="btn-confirm2" onclick="cnNo(${p.id})">Confirmar</button></div></div>`;
         } else {
-          // Already confirmed - show saved motivo with edit option
           expandHtml=`<div class="expand-zone"><div class="exp-inner">
             <div class="exp-lbl">Motivo</div>
             <textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence...">${mot[p.id]||''}</textarea>
             <button class="btn-confirm2" onclick="cnNo(${p.id})" style="background:var(--muted)">Guardar cambio</button>
+          </div></div>`;
+        }
+      }
+      else if(e==='standby'){
+        if(isSbPending){
+          expandHtml=`<div class="expand-zone"><div class="exp-inner">
+            <div class="exp-lbl">Comentarios / consulta (opcional)</div>
+            <textarea class="exp-textarea" id="sb-${p.id}" placeholder="Ej: Quiero pensar el precio, quiero ver otras opciones primero...">${sbMot[p.id]||''}</textarea>
+            <button class="btn-confirm2" onclick="cnStandby(${p.id})" style="background:#E6A817">Confirmar stand by</button>
+          </div></div>`;
+        } else {
+          expandHtml=`<div class="expand-zone"><div class="exp-inner">
+            <div class="exp-lbl">Comentario</div>
+            <textarea class="exp-textarea" id="sb-${p.id}">${sbMot[p.id]||''}</textarea>
+            <button class="btn-confirm2" onclick="cnStandby(${p.id})" style="background:var(--muted)">Guardar cambio</button>
           </div></div>`;
         }
       }
