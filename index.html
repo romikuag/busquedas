@@ -343,8 +343,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
         <div class="fg"><label>Expensas</label><div class="prefix-wrap"><span class="prefix-tag plain">$</span><input type="text" id="fe" placeholder="45.000 / mes" oninput="fmtNum(this)"/></div></div>
         <div class="fg"><label>Ubicación</label><input type="text" id="fu" placeholder="Freire 2443, Belgrano R"/></div>
         <div class="fg ff"><label>Descripción</label><textarea id="fd" placeholder="Balcón, amenities, orientación, estado..."></textarea></div>
-        <div class="fg ff"><label>Link portal</label><input type="text" id="fl" placeholder="https://zonaprop.com.ar/..."/></div>
-        <div class="fg ff"><label>Imagen — clic, arrastrá o pegá (Ctrl+V)</label>
+        <div class="fg ff"><label>Link portal</label><input type="text" id="fl" placeholder="https://zonaprop.com.ar/..." onblur="fetchLinkImg()" onpaste="setTimeout(fetchLinkImg,300)"/></div>
+        <div class="fg ff"><label>Imagen — clic, arrastrá o pegá (Ctrl+V) · o se carga sola desde el link del portal</label>
           <div class="img-drop" id="da" tabindex="0" ondragover="oDO(event)" ondragleave="oDL()" ondrop="oDD(event)" onpaste="oP(event)">
             <input type="file" class="img-file-input" id="ifi" accept="image/*" onchange="oFS(event)"/>
             <div class="img-drop-inner" id="dii">
@@ -647,6 +647,57 @@ function lImg(file){
 window.rmImg=e=>{if(e)e.stopPropagation();imgD='';$('ipv').classList.add('h');$('ipv').src='';$('dii').classList.remove('h');$('da').classList.remove('loaded');$('ifi').value='';}
 
 function getM2(){const t=$('fm1').value.trim(),c=$('fm2').value.trim();if(t&&c)return t+' m² tot | '+c+' m² cub';if(t)return t+' m² tot';if(c)return c+' m² cub';return '';}
+
+window.fetchLinkImg=async function(){
+  const link=document.getElementById('fl').value.trim();
+  if(!link||imgD) return; // don't overwrite existing image
+  if(!link.startsWith('http')) return;
+  const da=document.getElementById('da');
+  const dii=document.getElementById('dii');
+  // Show loading state
+  dii.innerHTML='<div style="font-size:11px;color:var(--muted)">🔍 Buscando imagen del portal...</div>';
+  try{
+    // Use microlink API to get preview image
+    const url=`https://api.microlink.io/?url=${encodeURIComponent(link)}&screenshot=false&meta=false&video=false`;
+    const res=await fetch(url);
+    const data=await res.json();
+    const imgUrl=data?.data?.image?.url||data?.data?.logo?.url||null;
+    if(imgUrl){
+      // Fetch the image and convert to base64 via canvas
+      const img=new Image();
+      img.crossOrigin='anonymous';
+      img.onload=function(){
+        const canvas=document.createElement('canvas');
+        const maxW=800;
+        const ratio=Math.min(1,maxW/img.width);
+        canvas.width=Math.round(img.width*ratio);
+        canvas.height=Math.round(img.height*ratio);
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        imgD=canvas.toDataURL('image/jpeg',0.7);
+        document.getElementById('ipv').src=imgD;
+        document.getElementById('ipv').classList.remove('h');
+        document.getElementById('dii').classList.add('h');
+        da.classList.add('loaded');
+        toast('✓ Imagen cargada desde el portal');
+      };
+      img.onerror=function(){
+        // Try loading directly as img src (some portals allow this)
+        document.getElementById('ipv').src=imgUrl;
+        document.getElementById('ipv').classList.remove('h');
+        document.getElementById('dii').classList.add('h');
+        da.classList.add('loaded');
+        imgD=imgUrl; // store URL directly if canvas fails
+        toast('✓ Imagen cargada desde el portal');
+      };
+      img.src=imgUrl;
+    } else {
+      // Reset label
+      dii.innerHTML='<div style="font-size:28px">🖼</div><div style="font-size:13px;font-weight:500;color:var(--carbon)">Clic, arrastrá o pegá</div><div style="font-size:11px;color:var(--muted)">No se encontró imagen — pegá manualmente con Ctrl+V</div>';
+    }
+  }catch(e){
+    dii.innerHTML='<div style="font-size:28px">🖼</div><div style="font-size:13px;font-weight:500;color:var(--carbon)">Clic, arrastrá o pegá</div><div style="font-size:11px;color:var(--muted)">Ctrl+V / Cmd+V para pegar directo</div>';
+  }
+}
 
 window.addProp=async function(){
   const precio=$('fp').value.trim(),tipo=$('ft').value,metraje=getM2(),amb=$('fa').value.trim(),exp=$('fe').value.trim(),desc=$('fd').value.trim(),ubic=$('fu').value.trim(),link=$('fl').value.trim();
