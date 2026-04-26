@@ -49,7 +49,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 .btn-sm-green{background:var(--green);color:#fff;border:none}
 .btn-sm-carbon{background:var(--carbon);color:#fff;border:1px solid rgba(255,255,255,0.2)}
 /* DASHBOARD */
-.dash-body{padding:1.25rem;max-width:700px;margin:0 auto}
+.dash-body{padding:1.25rem;max-width:900px;margin:0 auto}
 .dash-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
 .dash-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500}
 .filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
@@ -71,7 +71,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 .status-selector{display:none;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)}
 .status-selector.open{display:flex}
 /* AGENT PANEL */
-.agent-body{padding:1.25rem;max-width:680px;margin:0 auto}
+.agent-body{padding:1.25rem;max-width:900px;margin:0 auto}
 .section-lbl{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;margin-top:1.25rem}
 .section-lbl:first-child{margin-top:0}
 .client-row{display:flex;gap:8px}
@@ -132,21 +132,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 .inst-nav::-webkit-scrollbar{display:none}
 .inav-btn{padding:5px 15px;border:0.5px solid var(--border);border-radius:20px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--carbon);white-space:nowrap}
 .inav-btn.active{background:var(--carbon);color:#fff;border-color:var(--carbon)}
-.cards-area{padding:1.25rem;max-width:700px;margin:0 auto}
+.cards-area{padding:1.25rem;max-width:900px;margin:0 auto}
 .inst-lbl{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:0.5px solid var(--border)}
 .prop-card{background:var(--surface);border:0.5px solid var(--border);border-radius:12px;margin-bottom:1rem;overflow:hidden}
 .prop-card.estado-no{border-left:3px solid var(--red)}
 .prop-card.estado-standby{border-left:3px solid var(--amber)}
 .prop-card.estado-visita{border-left:3px solid var(--green)}
-.card-img{width:100%;height:130px;background:var(--gold-light);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:11px}
-.card-img img{width:100%;height:130px;object-fit:cover;display:block}
-.card-info{padding:10px 14px 6px}
-.card-line1{font-size:12px;font-weight:500;color:var(--carbon);margin-bottom:3px}
-.card-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:500;color:var(--carbon);line-height:1.2;margin-bottom:3px}
-.card-meta{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:2px}
+.card-inner{display:flex;gap:0;align-items:stretch}
+.card-img{width:220px;min-width:220px;max-width:220px;background:var(--gold-light);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:11px;flex-shrink:0;border-radius:12px 0 0 12px}
+.card-img img{width:220px;height:100%;object-fit:cover;display:block;min-height:160px}
+.card-right{flex:1;display:flex;flex-direction:column;min-width:0}
+.card-info{padding:14px 16px 8px}
+.card-line1{font-size:12px;font-weight:500;color:var(--carbon);margin-bottom:4px}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:500;color:var(--carbon);line-height:1.2;margin-bottom:6px}
+.card-meta{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:2px}
+.card-desc{font-size:12px;color:var(--carbon);line-height:1.6;margin-top:4px;white-space:pre-wrap}
 .card-link{font-size:12px;color:#185FA5;display:inline-block;margin:6px 0 8px}
-.card-actions{padding:0 14px 12px}
+.card-actions{padding:0 16px 14px;margin-top:auto}
 .action-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+@media(max-width:600px){
+  .card-inner{flex-direction:column}
+  .card-img{width:100%;max-width:100%;min-width:0;border-radius:12px 12px 0 0;height:160px}
+  .card-img img{width:100%;height:160px}
+}
 .act-btn{padding:9px 4px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;text-align:center;line-height:1.3;border:1.5px solid;transition:all 0.2s}
 .act-btn:active{transform:scale(0.97)}
 .btn-co{border-color:#85C1E9;background:transparent;color:#1A5276}
@@ -198,7 +206,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 .ch-prog-fill{height:1.5px;background:var(--gold-mid);border-radius:2px;transition:width 0.5s}
 .resp-header{background:var(--gold-light);border-bottom:0.5px solid var(--gold-mid);padding:10px 1.25rem;font-size:12px;color:#7A5C2E;font-weight:500}
 /* RESUMEN MODULE */
-.resumen-module{padding:1.25rem;max-width:700px;margin:0 auto}
+.resumen-module{padding:1.25rem;max-width:900px;margin:0 auto}
 .resumen-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
 .res-filter-btn{padding:5px 14px;border:0.5px solid var(--border);border-radius:20px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;background:transparent;color:var(--carbon)}
 .res-filter-btn.active{background:var(--carbon);color:#fff;border-color:var(--carbon)}
@@ -803,20 +811,27 @@ function renderResp(){
         </div></div>`;
       }
       h+=`<div class="prop-card${e?' estado-'+e:''}" id="apc-${p.id}">
-        <div class="card-img">${p.img?`<img src="${p.img}"/>`:'<span>Sin imagen</span>'}</div>
-        <div class="card-info">
-          <div class="card-line1">${[p.precio,p.tipo,p.exp?'Expensas '+p.exp:''].filter(Boolean).join(' · ')}</div>
-          <div class="card-title">${p.ubic||'Sin ubicación'}</div>
-          <div class="card-meta">${[p.amb,p.metraje].filter(Boolean).join(' · ')}</div>
-          ${p.desc?`<div class="card-meta">${p.desc}</div>`:''}
-          ${p.link?`<a class="card-link" href="${p.link}" target="_blank">Ver publicación →</a>`:''}
-        </div>
-        <div class="resp-row">
-          <div class="resp-btn rb-no${e==='no'?' sel':''}">✕ No me interesa</div>
-          <div class="resp-btn rb-sb${e==='standby'?' sel':''}">◎ Stand by</div>
-          <div class="resp-btn rb-vi${e==='visita'?' sel':''}">✓ Coordinar visita</div>
+        <div class="card-inner">
+          <div class="card-img">${p.img?`<img src="${p.img}"/>`:'<span style="font-size:11px;color:var(--gold)">Sin imagen</span>'}</div>
+          <div class="card-right">
+            <div class="card-info">
+              <div class="card-line1">${[p.precio,p.tipo,p.exp?'Expensas '+p.exp:''].filter(Boolean).join(' · ')}</div>
+              <div class="card-title">${p.ubic||'Sin ubicación'}</div>
+              <div class="card-meta">${[p.amb,p.metraje].filter(Boolean).join(' · ')}</div>
+              ${p.desc?`<div class="card-desc">${p.desc}</div>`:''}
+              ${p.link?`<a class="card-link" href="${p.link}" target="_blank">Ver publicación →</a>`:''}
+            </div>
+            <div style="padding:0 16px 14px">
+              <div class="resp-row" style="grid-template-columns:1fr 1fr 1fr">
+                <div class="resp-btn rb-no${e==='no'?' sel':''}">✕ No me interesa</div>
+                <div class="resp-btn rb-sb${e==='standby'?' sel':''}">◎ Stand by</div>
+                <div class="resp-btn rb-vi${e==='visita'?' sel':''}">✓ Coordinar visita</div>
+              </div>
+            </div>
+          </div>
         </div>
         ${expandHtml}
+
 
       </div>`;
     });
@@ -1057,20 +1072,25 @@ function renderClient(){
         }
       }
       h+=`<div class="prop-card${e?' estado-'+e:''}" id="pc-${p.id}">
-        <div class="card-img">${p.img?`<img src="${p.img}"/>`:'<span>Sin imagen</span>'}</div>
-        <div class="card-info">
-          <div class="card-line1">${[p.precio,p.tipo,p.exp?'Expensas '+p.exp:''].filter(Boolean).join(' · ')}</div>
-          <div class="card-title">${p.ubic||'Sin ubicación'}</div>
-          <div class="card-meta">${[p.amb,p.metraje].filter(Boolean).join(' · ')}</div>
-          ${p.desc?`<div class="card-meta">${p.desc}</div>`:''}
-          ${p.link?`<a class="card-link" href="${p.link}" target="_blank">Ver publicación →</a>`:''}
+        <div class="card-inner">
+          <div class="card-img">${p.img?`<img src="${p.img}"/>`:'<span style="font-size:11px;color:var(--gold)">Sin imagen</span>'}</div>
+          <div class="card-right">
+            <div class="card-info">
+              <div class="card-line1">${[p.precio,p.tipo,p.exp?'Expensas '+p.exp:''].filter(Boolean).join(' · ')}</div>
+              <div class="card-title">${p.ubic||'Sin ubicación'}</div>
+              <div class="card-meta">${[p.amb,p.metraje].filter(Boolean).join(' · ')}</div>
+              ${p.desc?`<div class="card-desc">${p.desc}</div>`:''}
+              ${p.link?`<a class="card-link" href="${p.link}" target="_blank">Ver publicación →</a>`:''}
+            </div>
+            <div class="card-actions"><div class="action-row">
+              <button class="act-btn btn-no${e==='no'?' sel':''}" onclick="cAcc(${p.id},'no')">✕ No me interesa</button>
+              <button class="act-btn btn-sb${e==='standby'?' sel':''}" onclick="cAcc(${p.id},'standby')">◎ Stand by</button>
+              <button class="act-btn btn-vi${e==='visita'?' sel':''}" onclick="cAcc(${p.id},'visita')">✓ Coordinar visita</button>
+            </div></div>
+          </div>
         </div>
-        <div class="card-actions"><div class="action-row">
-          <button class="act-btn btn-no${e==='no'?' sel':''}" onclick="cAcc(${p.id},'no')">✕ No me interesa</button>
-          <button class="act-btn btn-sb${e==='standby'?' sel':''}" onclick="cAcc(${p.id},'standby')">◎ Stand by</button>
-          <button class="act-btn btn-vi${e==='visita'?' sel':''}" onclick="cAcc(${p.id},'visita')">✓ Coordinar visita</button>
-        </div></div>
         ${expandHtml}
+
 
       </div>`;
     });
