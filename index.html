@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pallarols Santander — Búsquedas</title>
+<link rel="icon" type="image/jpeg" href="favicom.jpeg"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -451,7 +452,7 @@ const auth=firebase.auth();
 const ADMIN_UID="uoRD8bq0BzbzZDtHSNXfPHvLKhY2";
 
 // STATE
-let sid=null,props=[],est={},vd={},mot={},con={},conResp={},cNom='',iA=1,mI=1,iF=1,imgD='',isAgent=false,viewMode='load',dashFilter='all',unsub=null,hist=[];
+let sid=null,props=[],est={},vd={},mot={},sbMot={},con={},conResp={},cNom='',iA=1,mI=1,iF=1,imgD='',isAgent=false,viewMode='load',dashFilter='all',unsub=null,hist=[];
 
 // UTILS
 const $=id=>document.getElementById(id);
@@ -487,16 +488,16 @@ async function setHistAlert(id,v){const h=hist.find(h=>h.id===id);if(h){h.alert=
 async function delHist(id){hist=hist.filter(h=>h.id!==id);await saveHist();}
 
 // FIREBASE
-async function saveFB(){if(!sid)return;try{await db.collection('busquedas').doc(sid).set({cNom,props,est,vd,mot,con,conResp,iA,mI,updatedAt:Date.now()});}catch(e){console.error(e);}}
-async function saveResp(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({est,mot,con,updatedAt:Date.now()});await setHistAlert(sid,true);}catch(e){console.error(e);}}
+async function saveFB(){if(!sid)return;try{await db.collection('busquedas').doc(sid).set({cNom,props,est,vd,mot,sbMot,con,conResp,iA,mI,updatedAt:Date.now()});}catch(e){console.error(e);}}
+async function saveResp(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({est,mot,sbMot,con,updatedAt:Date.now()});await setHistAlert(sid,true);}catch(e){console.error(e);}}
 async function saveVisit(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({vd,updatedAt:Date.now()});}catch(e){console.error(e);}}
 function subscribe(){
   if(unsub)unsub();if(!sid)return;
   unsub=db.collection('busquedas').doc(sid).onSnapshot(snap=>{
     if(!snap.exists)return;
     const d=snap.data();
-    if(isAgent){est=d.est||{};vd=d.vd||{};mot=d.mot||{};con=d.con||{};conResp=d.conResp||{};if(viewMode==='resp')renderResp();}
-    else{props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||'';mI=d.mI||1;renderClient();}
+    if(isAgent){est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};con=d.con||{};conResp=d.conResp||{};if(viewMode==='resp')renderResp();}
+    else{props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||'';mI=d.mI||1;renderClient();}
   });
 }
 
@@ -594,7 +595,7 @@ window.openResp=async(id,name)=>{
   sid=id;cNom=name;isAgent=true;viewMode='resp';showLoad(true);
   try{
     const snap=await db.collection('busquedas').doc(sid).get();
-    if(snap.exists){const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||name;mI=d.mI||1;}
+    if(snap.exists){const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||name;mI=d.mI||1;}
     $('agent-title').textContent=cNom;$('btn-toggle').textContent='Cargar props';
     $('load-view').style.display='none';$('resp-view').style.display='block';
     iF=1;renderResp();show('screen-agent');subscribe();await setHistAlert(id,false);
@@ -692,7 +693,23 @@ function renderResp(){
     bi[inst].forEach(p=>{
       const e=est[p.id]||'',v=vd[p.id]||{},m=mot[p.id]||'';
       let expandHtml='';
-      if(e==='no'&&m){expandHtml=`<div class="motivo-box">💬 Motivo del cliente: ${m}</div>`;}
+      if(e==='no'&&m){expandHtml=`<div class="motivo-box">💬 Motivo: ${m}</div>`;}
+      if(e==='standby'&&sbMot[p.id]){expandHtml=`<div class="motivo-box" style="background:var(--amber-pale);color:var(--amber-txt)">💬 Comentario: ${sbMot[p.id]}</div>`;}
+      else if(e==='standby'){
+        if(isSbPending){
+          expandHtml=`<div class="expand-zone"><div class="exp-inner">
+            <div class="exp-lbl">Comentarios / consulta (opcional)</div>
+            <textarea class="exp-textarea" id="sb-${p.id}" placeholder="Ej: Quiero pensar el precio, quiero ver otras opciones primero...">${sbMot[p.id]||''}</textarea>
+            <button class="btn-confirm2" onclick="cnStandby(${p.id})" style="background:#E6A817">Confirmar stand by</button>
+          </div></div>`;
+        } else {
+          expandHtml=`<div class="expand-zone"><div class="exp-inner">
+            <div class="exp-lbl">Comentario</div>
+            <textarea class="exp-textarea" id="sb-${p.id}">${sbMot[p.id]||''}</textarea>
+            <button class="btn-confirm2" onclick="cnStandby(${p.id})" style="background:var(--muted)">Guardar cambio</button>
+          </div></div>`;
+        }
+      }
       else if(e==='visita'){
         expandHtml=`<div class="expand-zone"><div class="exp-inner">
           <div class="exp-lbl">Contacto al colega</div>
@@ -887,7 +904,7 @@ window.agentRespConsulta=async function(id){
   }catch(e){toast('Error al guardar');console.error(e);}
 }
 async function saveVisit_(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({vd,updatedAt:Date.now()});}catch(e){console.error(e);}}
-function upResAgent(){const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))&&val!=='no-pending').map(([,val])=>val);const el1=$('arv');if(el1)el1.textContent=v.filter(x=>x==='visita').length;const el2=$('ars');if(el2)el2.textContent=v.filter(x=>x==='standby').length;const el3=$('arn');if(el3)el3.textContent=v.filter(x=>x==='no').length;}
+function upResAgent(){const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))&&val!=='no-pending'&&val!=='sb-pending').map(([,val])=>val);const el1=$('arv');if(el1)el1.textContent=v.filter(x=>x==='visita').length;const el2=$('ars');if(el2)el2.textContent=v.filter(x=>x==='standby').length;const el3=$('arn');if(el3)el3.textContent=v.filter(x=>x==='no').length;}
 
 // CLIENT VIEW
 async function openClient(){
@@ -895,7 +912,7 @@ async function openClient(){
   try{
     const snap=await db.collection('busquedas').doc(sid).get();
     if(!snap.exists){showLoad(false);toast('Código no encontrado');return;}
-    const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||'';mI=d.mI||1;
+    const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||'';mI=d.mI||1;
     show('screen-client');iF=1;renderClient();subscribe();
   }catch(e){toast('Error al cargar');console.error(e);}
   showLoad(false);
@@ -914,7 +931,7 @@ function renderClient(){
   Object.keys(bi).sort().forEach(inst=>{
     if(iF===0)h+=`<div class="inst-lbl">Búsqueda ${inst} — ${bi[inst].length} propiedades</div>`;
     bi[inst].forEach(p=>{
-      const eRaw=est[p.id]||'';const e=eRaw==='no-pending'?'no':eRaw;const isPending=eRaw==='no-pending';
+      const eRaw=est[p.id]||'';const isSbPending=eRaw==='sb-pending';const e=(eRaw==='no-pending'?'no':eRaw==='sb-pending'?'standby':eRaw);const isPending=eRaw==='no-pending';
       let expandHtml='';
       if(e==='no'){
         if(isPending){
@@ -970,9 +987,13 @@ function renderClient(){
 }
 window.cfilt=n=>{iF=n;renderClient();}
 window.cAcc=async(id,tipo)=>{
-  if(est[id]===tipo&&tipo==='standby'){delete est[id];renderClient();await saveResp();return;}
-  // For 'no': set pending state (shows form but doesn't count yet)
+  // Toggle off standby if already selected (and confirmed)
+  if(est[id]==='standby'&&tipo==='standby'){delete est[id];delete sbMot[id];renderClient();await saveResp();return;}
+  // Toggle off no if already confirmed
+  if(est[id]==='no'&&tipo==='no'){delete est[id];delete mot[id];renderClient();await saveResp();return;}
+  // Pending states - show form before confirming
   if(tipo==='no'){est[id]='no-pending';renderClient();return;}
+  if(tipo==='standby'){est[id]='sb-pending';renderClient();return;}
   est[id]=tipo;renderClient();await saveResp();
 }
 window.toggleConForm=function(id){
@@ -987,11 +1008,19 @@ window.cnConsulta=async function(id){
   renderClient();
   toast('✓ Consulta enviada');
 }
+window.cnStandby=async function(id){
+  const t=(document.getElementById('sb-'+id)||{}).value||'';
+  sbMot[id]=t;
+  est[id]='standby';
+  await saveResp();
+  renderClient();
+  toast('✓ Guardado');
+}
 window.cnNo=async function(id){const t=($('mo-'+id)||{}).value||'';mot[id]=t;est[id]='no';await saveResp();renderClient();toast('✓ Guardado');}
 function upResClient(){
   // Refresh client resumen if open
   if(clientResumenOpen) renderClientResumen();
-  const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))&&val!=='no-pending').map(([,val])=>val),tot=props.length,res=v.length;
+  const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))&&val!=='no-pending'&&val!=='sb-pending').map(([,val])=>val),tot=props.length,res=v.length;
   const el1=$('rv');if(el1)el1.textContent=v.filter(x=>x==='visita').length;
   const el2=$('rs');if(el2)el2.textContent=v.filter(x=>x==='standby').length;
   const el3=$('rn');if(el3)el3.textContent=v.filter(x=>x==='no').length;
