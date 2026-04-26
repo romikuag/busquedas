@@ -650,23 +650,66 @@ function getM2(){const t=$('fm1').value.trim(),c=$('fm2').value.trim();if(t&&c)r
 
 window.fetchLinkImg=async function(){
   const link=document.getElementById('fl').value.trim();
-  if(!link||imgD) return; // don't overwrite existing image
+  if(!link||imgD) return;
   if(!link.startsWith('http')) return;
   const da=document.getElementById('da');
   const dii=document.getElementById('dii');
-  // Show loading state
-  dii.innerHTML='<div style="font-size:11px;color:var(--muted)">🔍 Buscando imagen del portal...</div>';
+  dii.innerHTML='<div style="font-size:11px;color:var(--muted);padding:20px 0">🔍 Buscando imagen...</div>';
+
+  // Try multiple strategies in order
+  let imgUrl=null;
+
+  // Strategy 1: allorigins proxy to read og:image from page HTML
   try{
-    // Use microlink API to get preview image
-    const url=`https://api.microlink.io/?url=${encodeURIComponent(link)}&screenshot=false&meta=false&video=false`;
-    const res=await fetch(url);
-    const data=await res.json();
-    const imgUrl=data?.data?.image?.url||data?.data?.logo?.url||null;
-    if(imgUrl){
-      // Fetch the image and convert to base64 via canvas
-      const img=new Image();
-      img.crossOrigin='anonymous';
-      img.onload=function(){
+    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(link)}`;
+    const res=await Promise.race([fetch(proxy),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000))]);
+    if(res.ok){
+      const d=await res.json();
+      const html2=d.contents||'';
+      // Extract og:image
+      const ogMatch=html2.match(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+                  ||html2.match(/content=["']([^"']+)["'][^>]*property=["']og:image["']/i)
+                  ||html2.match(/name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)
+                  ||html2.match(/content=["']([^"']+)["'][^>]*name=["']twitter:image["']/i);
+      if(ogMatch&&ogMatch[1]&&ogMatch[1].startsWith('http')) imgUrl=ogMatch[1];
+    }
+  }catch(e){}
+
+  // Strategy 2: microlink.io
+  if(!imgUrl){
+    try{
+      const res=await Promise.race([
+        fetch(`https://api.microlink.io/?url=${encodeURIComponent(link)}&screenshot=false`),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),6000))
+      ]);
+      if(res.ok){
+        const d=await res.json();
+        imgUrl=d?.data?.image?.url||d?.data?.screenshot?.url||null;
+      }
+    }catch(e){}
+  }
+
+  // Strategy 3: jsonlink.io
+  if(!imgUrl){
+    try{
+      const res=await Promise.race([
+        fetch(`https://jsonlink.io/api/extract?url=${encodeURIComponent(link)}`),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),6000))
+      ]);
+      if(res.ok){
+        const d=await res.json();
+        const imgs=d?.images||[];
+        if(imgs.length) imgUrl=imgs[0];
+      }
+    }catch(e){}
+  }
+
+  if(imgUrl){
+    // Load image through canvas for compression
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    img.onload=function(){
+      try{
         const canvas=document.createElement('canvas');
         const maxW=800;
         const ratio=Math.min(1,maxW/img.width);
@@ -674,30 +717,30 @@ window.fetchLinkImg=async function(){
         canvas.height=Math.round(img.height*ratio);
         canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
         imgD=canvas.toDataURL('image/jpeg',0.7);
-        document.getElementById('ipv').src=imgD;
-        document.getElementById('ipv').classList.remove('h');
-        document.getElementById('dii').classList.add('h');
-        da.classList.add('loaded');
-        toast('✓ Imagen cargada desde el portal');
-      };
-      img.onerror=function(){
-        // Try loading directly as img src (some portals allow this)
-        document.getElementById('ipv').src=imgUrl;
-        document.getElementById('ipv').classList.remove('h');
-        document.getElementById('dii').classList.add('h');
-        da.classList.add('loaded');
-        imgD=imgUrl; // store URL directly if canvas fails
-        toast('✓ Imagen cargada desde el portal');
-      };
-      img.src=imgUrl;
-    } else {
-      // Reset label
-      dii.innerHTML='<div style="font-size:28px">🖼</div><div style="font-size:13px;font-weight:500;color:var(--carbon)">Clic, arrastrá o pegá</div><div style="font-size:11px;color:var(--muted)">No se encontró imagen — pegá manualmente con Ctrl+V</div>';
-    }
-  }catch(e){
-    dii.innerHTML='<div style="font-size:28px">🖼</div><div style="font-size:13px;font-weight:500;color:var(--carbon)">Clic, arrastrá o pegá</div><div style="font-size:11px;color:var(--muted)">Ctrl+V / Cmd+V para pegar directo</div>';
+      }catch(e){
+        imgD=imgUrl; // CORS blocked canvas, store URL directly
+      }
+      document.getElementById('ipv').src=imgD||imgUrl;
+      document.getElementById('ipv').classList.remove('h');
+      document.getElementById('dii').classList.add('h');
+      da.classList.add('loaded');
+      toast('✓ Imagen cargada desde el portal');
+    };
+    img.onerror=function(){
+      // Can't load image directly, try setting src anyway as display only
+      document.getElementById('ipv').src=imgUrl;
+      document.getElementById('ipv').classList.remove('h');
+      document.getElementById('dii').classList.add('h');
+      da.classList.add('loaded');
+      imgD=imgUrl;
+      toast('✓ Imagen cargada desde el portal');
+    };
+    img.src=imgUrl;
+  } else {
+    dii.innerHTML='<div style="font-size:28px">🖼</div><div style="font-size:13px;font-weight:500;color:var(--carbon)">Clic, arrastrá o pegá</div><div style="font-size:11px;color:#C0392B">No se pudo cargar imagen — pegá manualmente con Ctrl+V</div>';
   }
 }
+
 
 window.addProp=async function(){
   const precio=$('fp').value.trim(),tipo=$('ft').value,metraje=getM2(),amb=$('fa').value.trim(),exp=$('fe').value.trim(),desc=$('fd').value.trim(),ubic=$('fu').value.trim(),link=$('fl').value.trim();
