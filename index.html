@@ -672,56 +672,41 @@ window.fetchLinkImg=async function(){
   const dii=document.getElementById('dii');
   dii.innerHTML='<div style="font-size:11px;color:var(--muted);padding:20px 0">🔍 Buscando imagen del portal...</div>';
 
-  // Clean tracking params from URL (ML adds tons of them)
-  let link=linkRaw;
-  try{
-    const u=new URL(linkRaw);
-    // For MercadoLibre, keep only the path
-    if(u.hostname.includes('mercadolibre')||u.hostname.includes('mercadopago')){
-      link=u.origin+u.pathname;
-    }
-  }catch(e){}
-
-  // Logo/icon patterns to SKIP
   const BAD=['favicon','/org-img/','/logos/','/icon','.ico','logo.png','logo.jpg',
-    'no-image','placeholder','default','sin-foto','brand-logo','mercadolibre.com/org'];
+    'no-image','placeholder','default','sin-foto','brand-logo',
+    'mercadolibre.com/org','mercadolibre.com/home','mlstatic.com/org'];
   function isBad(url){const u=url.toLowerCase();return BAD.some(p=>u.includes(p));}
-
-  // Good CDN patterns (property photos)
-  function isGood(url){
-    const u=url.toLowerCase();
-    return (u.includes('mlstatic.com')&&!isBad(u))||
-           (u.includes('argenprop')&&!isBad(u))||
-           (u.includes('zonaprop')&&!isBad(u))||
-           (u.includes('cloudinary')&&!isBad(u))||
-           (u.includes('amazonaws')&&!isBad(u));
-  }
 
   let imgUrl=null;
 
-  // Strategy 1: microlink (renders JS - best for Argenprop & MercadoLibre)
-  try{
-    const mlRes=await Promise.race([
-      fetch(`https://api.microlink.io/?url=${encodeURIComponent(link)}&screenshot=false&audio=false&video=false&meta=true`),
-      new Promise((_,r)=>setTimeout(()=>r(new Error('t')),10000))
-    ]);
-    if(mlRes.ok){
-      const d=await mlRes.json();
-      // microlink returns image, logo, screenshot
-      const candidates=[
-        d?.data?.image?.url,
-        d?.data?.screenshot?.url,
-      ].filter(u=>u&&u.startsWith('http')&&!isBad(u));
-      // Prefer actual property photos over screenshots
-      const good=candidates.filter(u=>isGood(u));
-      imgUrl=(good.length?good:candidates)[0]||null;
-    }
-  }catch(e){}
+  // ── Special case: MercadoLibre ──
+  // Extract MLA ID and use ML public API
+  const mlaMatch=linkRaw.match(/MLA-?(\d+)/i)||linkRaw.match(/\/MLA(\d+)/i);
+  if(mlaMatch){
+    try{
+      const mlaId='MLA'+mlaMatch[1];
+      const apiRes=await Promise.race([
+        fetch(`https://api.mercadolibre.com/items/${mlaId}`),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('t')),8000))
+      ]);
+      if(apiRes.ok){
+        const item=await apiRes.json();
+        // Pictures array contains actual property photos
+        const pics=item?.pictures||[];
+        if(pics.length){
+          // Use highest quality: replace -I.jpg with -O.jpg or -F.jpg
+          const picUrl=(pics[0].secure_url||pics[0].url||'').replace(/-[A-Z]\.jpg$/,'-F.jpg');
+          if(picUrl&&!isBad(picUrl)) imgUrl=picUrl;
+        }
+      }
+    }catch(e){}
+  }
 
-  // Strategy 2: allorigins proxy (works for static pages like Zonaprop)
+  // ── Strategy: allorigins proxy (works for Zonaprop, sometimes Argenprop) ──
   if(!imgUrl){
     try{
-      const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(link)}`;
+      const cleanUrl=linkRaw.split('?')[0]; // remove query params
+      const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}`;
       const res=await Promise.race([fetch(proxy),new Promise((_,r)=>setTimeout(()=>r(new Error('t')),8000))]);
       if(res.ok){
         const d=await res.json();
@@ -736,8 +721,23 @@ window.fetchLinkImg=async function(){
           /content=["']([^"']+)["'][^>]*name=["']twitter:image["']/gi,
         ];
         for(const pat of pats){let m;pat.lastIndex=0;while((m=pat.exec(h2))!==null){const u=m[1];if(u.startsWith('http')&&!isBad(u))candidates.push(u);}}
-        const good=candidates.filter(u=>isGood(u));
-        imgUrl=(good.length?good:candidates)[0]||null;
+        imgUrl=candidates[0]||null;
+      }
+    }catch(e){}
+  }
+
+  // ── Strategy: microlink (last resort, slower) ──
+  if(!imgUrl){
+    try{
+      const cleanUrl=linkRaw.split('?')[0];
+      const mlRes=await Promise.race([
+        fetch(`https://api.microlink.io/?url=${encodeURIComponent(cleanUrl)}&screenshot=false&audio=false&video=false`),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('t')),10000))
+      ]);
+      if(mlRes.ok){
+        const d=await mlRes.json();
+        const u=d?.data?.image?.url;
+        if(u&&!isBad(u)) imgUrl=u;
       }
     }catch(e){}
   }
@@ -1030,11 +1030,12 @@ function renderResumen(){
     if(status==='avisitar'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:var(--green-txt);margin-left:6px">📅 ${vinfo.fv}${vinfo.hv?' '+vinfo.hv:''}</span>`;
     if(status==='realizada'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:#1E8449;margin-left:6px">Visitada ${vinfo.fv}</span>`;
     if(status==='realizada'&&vinfo.comentario) extraInfo+=`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${vinfo.comentario.substring(0,60)}${vinfo.comentario.length>60?'...':''}"</div>`;
+    const honInfo=vd[p.id]?.hon?`<span style="font-size:11px;color:#7F8C8D;margin-left:8px">🔒 ${vd[p.id].hon}</span>`:'';
     return `<div class="prop-row">
       <div class="prop-row-thumb">${p.img?`<img src="${p.img}"/>`:'📷'}</div>
       <div class="prop-row-info">
         <div class="prop-row-ubic">${p.ubic||'Sin ubicación'}</div>
-        <div class="prop-row-price">${p.precio||''}${p.precio&&p.metraje?' · ':''}${p.metraje||''}${extraInfo}</div>
+        <div class="prop-row-price">${p.precio||''}${p.precio&&p.metraje?' · ':''}${p.metraje||''}${honInfo}${extraInfo}</div>
       </div>
       <div class="prop-row-status">${getStatusPill(status)}</div>
       ${p.link?`<div class="prop-row-link"><a href="${p.link}" target="_blank">Ver →</a></div>`:''}
