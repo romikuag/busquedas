@@ -348,7 +348,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
       <div class="section-lbl" style="margin-top:1.25rem">Agregar propiedad</div>
       <div class="form-grid">
         <div class="fg"><label>Precio</label><div class="prefix-wrap"><span class="prefix-tag">USD</span><input type="text" id="fp" placeholder="185.000" oninput="fmtNum(this)"/></div></div>
-        <div class="fg"><label>Tipología</label><select id="ft"><option>Departamento</option><option>PH</option><option>Casa</option><option>Local</option><option>Oficina</option></select></div>
+        <div class="fg"><label>Tipología</label><select id="ft"><option>Departamento</option><option>PH</option><option>Casa</option><option>Local</option><option>Oficina</option><option>Lote</option></select></div>
         <div class="fg"><label>M² totales / cubiertos</label>
           <div class="m2-wrap"><div class="m2f"><input type="number" id="fm1" placeholder="71" min="0"/><span class="m2s">m² tot</span></div><div class="m2sep"></div><div class="m2f"><input type="number" id="fm2" placeholder="55" min="0"/><span class="m2s">m² cub</span></div></div>
         </div>
@@ -799,7 +799,7 @@ window.toggleNoDisp=async function(id){
   toast(noDisp[id]?'⊘ Marcada como no disponible':'✓ Disponible nuevamente');
 }
 window.delProp=async function(id){props=props.filter(p=>p.id!==id);delete est[id];delete vd[id];delete mot[id];await saveFB();renderPropList();}
-let editingId=null,editingIndex=-1; // track which prop is being edited
+let editingId=null,editingIndex=-1,noTimer=null,sbTimer=null; // track which prop is being edited
 window.editProp=function(id){
   const p=props.find(x=>x.id===id);if(!p)return;
   $('fp').value=p.precio.replace('USD ','');$('ft').value=p.tipo;$('fm1').value=p.metraje.match(/^(\d+)/)?.[1]||'';$('fm2').value=p.metraje.match(/\| ?(\d+)/)?.[1]||'';
@@ -1085,27 +1085,24 @@ function renderClient(){
       let expandHtml='';
       if(e==='no'){
         if(isPending){
-          expandHtml=`<div class="expand-zone"><div class="exp-inner"><div class="exp-lbl">¿Por qué no te interesa?</div><textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence...">${mot[p.id]||''}</textarea><button class="btn-confirm2" onclick="cnNo(${p.id})">Confirmar</button></div></div>`;
+          expandHtml=`<div class="expand-zone"><div class="exp-inner"><div class="exp-lbl">¿Por qué no te interesa? <span style="font-size:11px;color:var(--muted);font-weight:400">(se guarda solo)</span></div><textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence..." oninput="autoNo(${p.id})">${mot[p.id]||''}</textarea></div></div>`;
         } else {
           expandHtml=`<div class="expand-zone"><div class="exp-inner">
-            <div class="exp-lbl">Motivo</div>
-            <textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence...">${mot[p.id]||''}</textarea>
-            <button class="btn-confirm2" onclick="cnNo(${p.id})" style="background:var(--muted)">Guardar cambio</button>
+            <div class="exp-lbl">Motivo <span style="font-size:11px;color:var(--muted);font-weight:400">(se guarda solo)</span></div>
+            <textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence..." oninput="autoNo(${p.id})">${mot[p.id]||''}</textarea>
           </div></div>`;
         }
       }
       else if(e==='standby'){
         if(isSbPending){
           expandHtml=`<div class="expand-zone"><div class="exp-inner">
-            <div class="exp-lbl">Comentarios / consulta (opcional)</div>
-            <textarea class="exp-textarea" id="sb-${p.id}" placeholder="Ej: Quiero pensar el precio, quiero ver otras opciones primero...">${sbMot[p.id]||''}</textarea>
-            <button class="btn-confirm2" onclick="cnStandby(${p.id})" style="background:#E6A817">Confirmar stand by</button>
+            <div class="exp-lbl">Comentarios / consulta (opcional) <span style="font-size:11px;color:var(--muted);font-weight:400">(se guarda solo)</span></div>
+            <textarea class="exp-textarea" id="sb-${p.id}" placeholder="Ej: Quiero pensar el precio, quiero ver otras opciones primero..." oninput="autoSb(${p.id})">${sbMot[p.id]||''}</textarea>
           </div></div>`;
         } else {
           expandHtml=`<div class="expand-zone"><div class="exp-inner">
-            <div class="exp-lbl">Comentario</div>
-            <textarea class="exp-textarea" id="sb-${p.id}">${sbMot[p.id]||''}</textarea>
-            <button class="btn-confirm2" onclick="cnStandby(${p.id})" style="background:var(--muted)">Guardar cambio</button>
+            <div class="exp-lbl">Comentario <span style="font-size:11px;color:var(--muted);font-weight:400">(se guarda solo)</span></div>
+            <textarea class="exp-textarea" id="sb-${p.id}" oninput="autoSb(${p.id})">${sbMot[p.id]||''}</textarea>
           </div></div>`;
         }
       }
@@ -1186,6 +1183,22 @@ window.cnStandby=async function(id){
   toast('✓ Guardado');
 }
 window.cnNo=async function(id){const t=($('mo-'+id)||{}).value||'';mot[id]=t;est[id]='no';await saveResp();renderClient();toast('✓ Guardado');}
+window.autoNo=function(id){
+  clearTimeout(noTimer);
+  noTimer=setTimeout(async function(){
+    const t=($('mo-'+id)||{}).value||'';
+    mot[id]=t;est[id]='no';
+    await saveResp();renderClient();toast('✓ Guardado automáticamente');
+  },1500);
+}
+window.autoSb=function(id){
+  clearTimeout(sbTimer);
+  sbTimer=setTimeout(async function(){
+    const t=(document.getElementById('sb-'+id)||{}).value||'';
+    sbMot[id]=t;est[id]='standby';
+    await saveResp();renderClient();toast('✓ Guardado automáticamente');
+  },1500);
+}
 function upResClient(){
   // Refresh client resumen if open
   if(clientResumenOpen) renderClientResumen();
