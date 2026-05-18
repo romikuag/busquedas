@@ -679,7 +679,7 @@ async function uploadImgToStorage(dataUrlOrBlob, filename){
 
 function lImg(file){
   const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),img=new Image(),url=URL.createObjectURL(file);
-  img.onload=async function(){
+  img.onload=function(){
     const r=Math.min(1,800/img.width);
     canvas.width=Math.round(img.width*r);
     canvas.height=Math.round(img.height*r);
@@ -687,13 +687,14 @@ function lImg(file){
     const dataUrl=canvas.toDataURL('image/jpeg',0.7);
     // Show preview immediately
     $('ipv').src=dataUrl;$('ipv').classList.remove('h');$('dii').classList.add('h');$('da').classList.add('loaded');
+    imgD=dataUrl;
     URL.revokeObjectURL(url);
-    // Upload to Storage in background
+    // Upload to Storage using .then() - no await needed
     toast('⬆ Subiendo imagen...');
     const fname=Date.now()+'.jpg';
-    const url2=await uploadImgToStorage(dataUrl,fname);
-    if(url2){imgD=url2;toast('✓ Imagen lista');}
-    else{imgD=dataUrl;} // fallback to base64 if upload fails
+    uploadImgToStorage(dataUrl,fname).then(function(url2){
+      if(url2){imgD=url2;toast('✓ Imagen lista');}
+    });
   };img.src=url;
 }
 window.rmImg=e=>{if(e)e.stopPropagation();imgD='';$('ipv').classList.add('h');$('ipv').src='';$('dii').classList.remove('h');$('da').classList.remove('loaded');$('ifi').value='';}
@@ -781,7 +782,7 @@ window.fetchLinkImg=async function(){
   if(imgUrl){
     const img=new Image();
     img.crossOrigin='anonymous';
-    img.onload=async function(){
+    img.onload=function(){
       try{
         const canvas=document.createElement('canvas');
         const ratio=Math.min(1,800/img.width);
@@ -789,26 +790,31 @@ window.fetchLinkImg=async function(){
         canvas.height=Math.round(img.height*ratio);
         canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
         const dataUrlPortal=canvas.toDataURL('image/jpeg',0.7);
-        // Upload to Storage
+        // Show preview immediately
+        document.getElementById('ipv').src=dataUrlPortal;
+        document.getElementById('ipv').classList.remove('h');
+        document.getElementById('dii').classList.add('h');
+        da.classList.add('loaded');
+        imgD=dataUrlPortal;
+        // Upload to Storage using .then() - no await needed
         const fnamePortal=Date.now()+'.jpg';
-        const urlPortal=await uploadImgToStorage(dataUrlPortal,fnamePortal);
-        imgD=urlPortal||dataUrlPortal;
-      }catch(e){imgD=imgUrl;}
-      document.getElementById('ipv').src=imgD||imgUrl;
-      document.getElementById('ipv').classList.remove('h');
-      document.getElementById('dii').classList.add('h');
-      da.classList.add('loaded');
+        uploadImgToStorage(dataUrlPortal,fnamePortal).then(function(urlPortal){
+          if(urlPortal) imgD=urlPortal;
+        });
+      }catch(e){imgD=imgUrl;
+        document.getElementById('ipv').src=imgUrl;
+        document.getElementById('ipv').classList.remove('h');
+        document.getElementById('dii').classList.add('h');
+        da.classList.add('loaded');
+      }
       toast('✓ Imagen cargada desde el portal');
     };
-    img.onerror=async function(){
+    img.onerror=function(){
       document.getElementById('ipv').src=imgUrl;
       document.getElementById('ipv').classList.remove('h');
       document.getElementById('dii').classList.add('h');
       da.classList.add('loaded');
-      // Try to upload the URL directly
-      const fnameErr=Date.now()+'.jpg';
-      const urlErr=await uploadImgToStorage(imgUrl,fnameErr);
-      imgD=urlErr||imgUrl;
+      imgD=imgUrl;
       toast('✓ Imagen cargada desde el portal');
     };
     img.src=imgUrl;
