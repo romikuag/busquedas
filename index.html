@@ -449,6 +449,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script>
 // These run immediately before the module loads
 function irALogin(){
@@ -465,6 +466,7 @@ function irAHome(){
 const app=firebase.initializeApp({apiKey:"AIzaSyBa3VDlOtpnBFH5ox3_8C8DMIfN3gyDVME",authDomain:"romina-kutin-busquedas.firebaseapp.com",projectId:"romina-kutin-busquedas",storageBucket:"romina-kutin-busquedas.firebasestorage.app",messagingSenderId:"385762198417",appId:"1:385762198417:web:a37e168da005c8e3fb5030"});
 const db=firebase.firestore();
 const auth=firebase.auth();
+const storage=firebase.storage();
 const ADMIN_UID="uoRD8bq0BzbzZDtHSNXfPHvLKhY2";
 
 // STATE
@@ -656,9 +658,43 @@ window.oDL=()=>$('da').classList.remove('drag');
 window.oDD=e=>{e.preventDefault();$('da').classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))lImg(f);}
 window.oFS=e=>{const f=e.target.files[0];if(f)lImg(f);}
 window.oP=e=>{e.preventDefault();const items=e.clipboardData&&e.clipboardData.items;if(!items)return;for(let i=0;i<items.length;i++){if(items[i].type.startsWith('image/')){lImg(items[i].getAsFile());break;}}}
+async function uploadImgToStorage(dataUrlOrBlob, filename){
+  try{
+    const storageRef = storage.ref('prop-images/' + (sid||'nosid') + '/' + filename);
+    let uploadTask;
+    if(typeof dataUrlOrBlob === 'string'){
+      // base64 dataURL
+      uploadTask = storageRef.putString(dataUrlOrBlob, 'data_url');
+    } else {
+      uploadTask = storageRef.put(dataUrlOrBlob);
+    }
+    const snap = await uploadTask;
+    const url = await snap.ref.getDownloadURL();
+    return url;
+  } catch(e){
+    console.error('Storage upload error:', e);
+    return null;
+  }
+}
+
 function lImg(file){
   const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),img=new Image(),url=URL.createObjectURL(file);
-  img.onload=function(){const r=Math.min(1,800/img.width);canvas.width=Math.round(img.width*r);canvas.height=Math.round(img.height*r);ctx.drawImage(img,0,0,canvas.width,canvas.height);imgD=canvas.toDataURL('image/jpeg',0.7);$('ipv').src=imgD;$('ipv').classList.remove('h');$('dii').classList.add('h');$('da').classList.add('loaded');URL.revokeObjectURL(url);};img.src=url;
+  img.onload=async function(){
+    const r=Math.min(1,800/img.width);
+    canvas.width=Math.round(img.width*r);
+    canvas.height=Math.round(img.height*r);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    const dataUrl=canvas.toDataURL('image/jpeg',0.7);
+    // Show preview immediately
+    $('ipv').src=dataUrl;$('ipv').classList.remove('h');$('dii').classList.add('h');$('da').classList.add('loaded');
+    URL.revokeObjectURL(url);
+    // Upload to Storage in background
+    toast('⬆ Subiendo imagen...');
+    const fname=Date.now()+'.jpg';
+    const url2=await uploadImgToStorage(dataUrl,fname);
+    if(url2){imgD=url2;toast('✓ Imagen lista');}
+    else{imgD=dataUrl;} // fallback to base64 if upload fails
+  };img.src=url;
 }
 window.rmImg=e=>{if(e)e.stopPropagation();imgD='';$('ipv').classList.add('h');$('ipv').src='';$('dii').classList.remove('h');$('da').classList.remove('loaded');$('ifi').value='';}
 
@@ -752,7 +788,11 @@ window.fetchLinkImg=async function(){
         canvas.width=Math.round(img.width*ratio);
         canvas.height=Math.round(img.height*ratio);
         canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-        imgD=canvas.toDataURL('image/jpeg',0.7);
+        const dataUrlPortal=canvas.toDataURL('image/jpeg',0.7);
+        // Upload to Storage
+        const fnamePortal=Date.now()+'.jpg';
+        const urlPortal=await uploadImgToStorage(dataUrlPortal,fnamePortal);
+        imgD=urlPortal||dataUrlPortal;
       }catch(e){imgD=imgUrl;}
       document.getElementById('ipv').src=imgD||imgUrl;
       document.getElementById('ipv').classList.remove('h');
@@ -760,12 +800,15 @@ window.fetchLinkImg=async function(){
       da.classList.add('loaded');
       toast('✓ Imagen cargada desde el portal');
     };
-    img.onerror=function(){
+    img.onerror=async function(){
       document.getElementById('ipv').src=imgUrl;
       document.getElementById('ipv').classList.remove('h');
       document.getElementById('dii').classList.add('h');
       da.classList.add('loaded');
-      imgD=imgUrl;
+      // Try to upload the URL directly
+      const fnameErr=Date.now()+'.jpg';
+      const urlErr=await uploadImgToStorage(imgUrl,fnameErr);
+      imgD=urlErr||imgUrl;
       toast('✓ Imagen cargada desde el portal');
     };
     img.src=imgUrl;
