@@ -1071,7 +1071,7 @@ function getPropStatus(p){
     return 'avisitar';
   }
   if(e==='standby') return 'standby';
-  if(e==='no'||e==='no-pending') return 'no';
+  if(e==='no') return 'no';
   return 'sin-respuesta';
 }
 
@@ -1127,7 +1127,7 @@ window.agentRespConsulta=async function(id){
   }catch(e){toast('Error al guardar');console.error(e);}
 }
 async function saveVisit_(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({vd,updatedAt:Date.now()});}catch(e){console.error(e);}}
-function upResAgent(){const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))&&val!=='no-pending'&&val!=='sb-pending').map(([,val])=>val);const el1=$('arv');if(el1)el1.textContent=v.filter(x=>x==='visita').length;const el2=$('ars');if(el2)el2.textContent=v.filter(x=>x==='standby').length;const el3=$('arn');if(el3)el3.textContent=v.filter(x=>x==='no').length;}
+function upResAgent(){const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))).map(([,val])=>val);const el1=$('arv');if(el1)el1.textContent=v.filter(x=>x==='visita').length;const el2=$('ars');if(el2)el2.textContent=v.filter(x=>x==='standby').length;const el3=$('arn');if(el3)el3.textContent=v.filter(x=>x==='no').length;}
 
 // CLIENT VIEW
 async function openClient(){
@@ -1154,30 +1154,19 @@ function renderClient(){
   Object.keys(bi).sort().forEach(inst=>{
     if(iF===0)h+=`<div class="inst-lbl">Búsqueda ${inst} — ${bi[inst].length} propiedades</div>`;
     bi[inst].forEach(p=>{
-      const eRaw=est[p.id]||'';const isSbPending=eRaw==='sb-pending';const e=(eRaw==='no-pending'?'no':eRaw==='sb-pending'?'standby':eRaw);const isPending=eRaw==='no-pending';
+      const e=est[p.id]||'';
       let expandHtml='';
       if(e==='no'){
-        if(isPending){
-          expandHtml=`<div class="expand-zone"><div class="exp-inner"><div class="exp-lbl">¿Por qué no te interesa? <span style="font-size:11px;color:var(--muted);font-weight:400">(se guarda solo)</span></div><textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence..." oninput="autoNo(${p.id})">${mot[p.id]||''}</textarea></div></div>`;
-        } else {
-          expandHtml=`<div class="expand-zone"><div class="exp-inner">
-            <div class="exp-lbl">Motivo <span style="font-size:11px;color:var(--muted);font-weight:400">(se guarda solo)</span></div>
-            <textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence..." oninput="autoNo(${p.id})">${mot[p.id]||''}</textarea>
-          </div></div>`;
-        }
+        expandHtml=`<div class="expand-zone"><div class="exp-inner">
+          <div class="exp-lbl">¿Por qué no te interesa? <span style="font-size:11px;color:var(--muted);font-weight:400">(opcional, se guarda solo)</span></div>
+          <textarea class="exp-textarea" id="mo-${p.id}" placeholder="Ej: fuera de presupuesto, zona no me convence..." oninput="autoNo(${p.id})">${mot[p.id]||''}</textarea>
+        </div></div>`;
       }
       else if(e==='standby'){
-        if(isSbPending){
-          expandHtml=`<div class="expand-zone"><div class="exp-inner">
-            <div class="exp-lbl">Comentarios / consulta (opcional) <span style="font-size:11px;color:var(--muted);font-weight:400">(se guarda solo)</span></div>
-            <textarea class="exp-textarea" id="sb-${p.id}" placeholder="Ej: Quiero pensar el precio, quiero ver otras opciones primero..." oninput="autoSb(${p.id})">${sbMot[p.id]||''}</textarea>
-          </div></div>`;
-        } else {
-          expandHtml=`<div class="expand-zone"><div class="exp-inner">
-            <div class="exp-lbl">Comentario <span style="font-size:11px;color:var(--muted);font-weight:400">(se guarda solo)</span></div>
-            <textarea class="exp-textarea" id="sb-${p.id}" oninput="autoSb(${p.id})">${sbMot[p.id]||''}</textarea>
-          </div></div>`;
-        }
+        expandHtml=`<div class="expand-zone"><div class="exp-inner">
+          <div class="exp-lbl">Comentarios / consulta (opcional, se guarda solo)</div>
+          <textarea class="exp-textarea" id="sb-${p.id}" placeholder="Ej: Quiero pensar el precio, quiero ver otras opciones primero..." oninput="autoSb(${p.id})">${sbMot[p.id]||''}</textarea>
+        </div></div>`;
       }
       else if(e==='visita'){
         const v=vd[p.id]||{};
@@ -1226,13 +1215,13 @@ function renderClient(){
 }
 window.cfilt=n=>{iF=n;renderClient();}
 window.cAcc=async(id,tipo)=>{
-  // Toggle off standby if already selected (and confirmed)
+  // Toggle off: if already confirmed, clicking again removes it
   if(est[id]==='standby'&&tipo==='standby'){delete est[id];delete sbMot[id];renderClient();await saveResp();return;}
-  // Toggle off no if already confirmed
   if(est[id]==='no'&&tipo==='no'){delete est[id];delete mot[id];renderClient();await saveResp();return;}
-  // Pending states - show form before confirming
-  if(tipo==='no'){est[id]='no-pending';renderClient();return;}
-  if(tipo==='standby'){est[id]='sb-pending';renderClient();return;}
+  // For 'no' and 'standby': save immediately to Firestore, then show optional comment textarea
+  // This ensures the agent sees the response right away even if client doesn't type anything
+  if(tipo==='no'){est[id]='no';renderClient();await saveResp();return;}
+  if(tipo==='standby'){est[id]='standby';renderClient();await saveResp();return;}
   est[id]=tipo;renderClient();await saveResp();
 }
 window.toggleConForm=function(id){
@@ -1275,7 +1264,7 @@ window.autoSb=function(id){
 function upResClient(){
   // Refresh client resumen if open
   if(clientResumenOpen) renderClientResumen();
-  const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))&&val!=='no-pending'&&val!=='sb-pending').map(([,val])=>val),tot=props.length,res=v.length;
+  const ids=new Set(props.map(p=>String(p.id)));const v=Object.entries(est).filter(([k,val])=>ids.has(String(k))).map(([,val])=>val),tot=props.length,res=v.length;
   const el1=$('rv');if(el1)el1.textContent=v.filter(x=>x==='visita').length;
   const el2=$('rs');if(el2)el2.textContent=v.filter(x=>x==='standby').length;
   const el3=$('rn');if(el3)el3.textContent=v.filter(x=>x==='no').length;
