@@ -506,16 +506,39 @@ async function setHistAlert(id,v){const h=hist.find(h=>h.id===id);if(h){h.alert=
 async function delHist(id){hist=hist.filter(h=>h.id!==id);await saveHist();}
 
 // FIREBASE
-async function saveFB(){if(!sid)return;try{await db.collection('busquedas').doc(sid).set({cNom,props,est,vd,mot,sbMot,noDisp,con,conResp,iA,mI,updatedAt:Date.now()});}catch(e){console.error(e);}}
-async function saveResp(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({est,mot,sbMot,con,updatedAt:Date.now()});await setHistAlert(sid,true);}catch(e){console.error(e);}}
+async function saveFB(){
+  if(!sid)return;
+  // Safety: if any prop still has a raw base64 dataURL (upload in progress), wait up to 3s
+  const hasBase64=props.some(p=>p.img&&p.img.startsWith('data:'));
+  if(hasBase64){
+    await new Promise(r=>setTimeout(r,3000));
+    // If still base64 after wait, strip the image to avoid Firestore 1MB limit
+    props=props.map(p=>({...p,img:(p.img&&p.img.startsWith('data:'))?'':p.img}));
+  }
+  try{
+    await db.collection('busquedas').doc(sid).set({cNom,props,est,vd,mot,sbMot,noDisp,con,conResp,iA,mI,updatedAt:Date.now()});
+  }catch(e){
+    console.error('saveFB error:',e);
+    toast('⚠ Error al guardar. Revisá tu conexión.');
+  }
+}
+async function saveResp(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({est,mot,sbMot,con,noDisp,updatedAt:Date.now()});await setHistAlert(sid,true);}catch(e){console.error('saveResp error:',e);toast('⚠ Error al guardar respuesta');}}
 async function saveVisit(){if(!sid)return;try{await db.collection('busquedas').doc(sid).update({vd,updatedAt:Date.now()});}catch(e){console.error(e);}}
 function subscribe(){
   if(unsub)unsub();if(!sid)return;
   unsub=db.collection('busquedas').doc(sid).onSnapshot(snap=>{
     if(!snap.exists)return;
     const d=snap.data();
-    if(isAgent){est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};noDisp=d.noDisp||{};con=d.con||{};conResp=d.conResp||{};if(viewMode==='resp')renderResp();}
-    else{props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};noDisp=d.noDisp||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||'';mI=d.mI||1;renderClient();}
+    if(isAgent){
+      est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};noDisp=d.noDisp||{};con=d.con||{};conResp=d.conResp||{};
+      // Always re-render whichever view is active
+      if(viewMode==='resp') renderResp();
+      else if(viewMode==='resumen') renderResumen();
+      else { renderPropList(); upResAgent(); }
+    } else {
+      props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};noDisp=d.noDisp||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||'';mI=d.mI||1;
+      renderClient();
+    }
   });
 }
 
@@ -542,9 +565,10 @@ window.backToDash=async function(){
   show('screen-dashboard');
 }
 window.startNewSearch=async function(){
-  sid=genId();props=[];est={};vd={};mot={};cNom='';iA=1;mI=1;imgD='';isAgent=true;viewMode='load';
+  sid=genId();props=[];est={};vd={};mot={};sbMot={};noDisp={};con={};conResp={};cNom='';iA=1;mI=1;imgD='';isAgent=true;viewMode='load';
   $('ci').value='';$('link-box-wrap').style.display='none';$('agent-title').textContent='Nueva búsqueda';
   $('btn-toggle').textContent='Ver respuestas';$('load-view').style.display='block';$('resp-view').style.display='none';
+  try{await db.collection('busquedas').doc(sid).set({cNom:'',props:[],est:{},vd:{},mot:{},sbMot:{},noDisp:{},con:{},conResp:{},iA:1,mI:1,updatedAt:Date.now()});}catch(e){console.error('init doc:',e);}
   resetInstRow();renderPropList();show('screen-agent');subscribe();
 }
 window.openByCode=function(){const c=$('code-input').value.trim().toLowerCase();if(!c){toast('Ingresá un código');return;}sid=c;isAgent=false;openClient();}
