@@ -418,6 +418,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
       <div class="ch-prog-row"><span id="ptxt">0 de 0 respondidas</span><span id="ppct">0%</span></div>
       <div class="ch-prog-bar"><div class="ch-prog-fill" id="pfill" style="width:0%"></div></div>
     </div>
+    <div id="client-pending-banner" style="display:none;margin-top:12px"></div>
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 1.25rem;background:var(--cream);border-bottom:0.5px solid var(--border)">
   <div class="inst-nav" id="client-nav" style="padding:0;border:none;flex:1"></div>
@@ -1068,6 +1069,7 @@ window.toggleClientResumen=function(){
     cv.style.display='block';
     btn.textContent='📋 Resumen';
   }
+  upResClient();
 }
 
 window.filterClientResumen=function(f,btn){
@@ -1075,6 +1077,11 @@ window.filterClientResumen=function(f,btn){
   document.querySelectorAll('#client-resumen-filters .res-filter-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderClientResumen();
+}
+window.openClientResumenPending=function(){
+  if(!clientResumenOpen)toggleClientResumen();
+  const btn=[...document.querySelectorAll('#client-resumen-filters .res-filter-btn')].find(b=>b.textContent.includes('Sin responder'));
+  if(btn)filterClientResumen('sin-respuesta',btn);
 }
 
 function renderClientResumen(){
@@ -1093,6 +1100,23 @@ function renderClientResumen(){
     if(status==='avisitar'&&ultima.dv) extraInfo+=`<div style="font-size:11px;color:var(--muted)">📍 ${ultima.dv}</div>`;
     if(status==='realizada'&&ultima.fv) extraInfo=`<span style="font-size:11px;color:#1E8449;margin-left:6px">Visitada ${ultima.fv}</span>`;
     if(status==='realizada'&&ultima.comentario) extraInfo+=`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${ultima.comentario.substring(0,60)}${ultima.comentario.length>60?'...':''}"</div>`;
+    if(status==='sin-respuesta'){
+      return `<div class="prop-row" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="prop-row-thumb">${p.img?`<img src="${p.img}"/>`:'📷'}</div>
+          <div class="prop-row-info">
+            <div class="prop-row-ubic">${p.ubic||'Sin ubicación'}</div>
+            <div class="prop-row-price">${p.precio||''}${p.precio&&p.metraje?' · ':''}${p.metraje||''}</div>
+          </div>
+          ${p.link?`<div class="prop-row-link"><a href="${p.link}" target="_blank">Ver →</a></div>`:''}
+        </div>
+        <div class="action-row">
+          <button class="act-btn btn-no" onclick="cAcc(${p.id},'no')">✕ No me interesa</button>
+          <button class="act-btn btn-sb" onclick="cAcc(${p.id},'standby')">◎ Stand by</button>
+          <button class="act-btn btn-vi" onclick="cAcc(${p.id},'visita')">✓ Coordinar visita</button>
+        </div>
+      </div>`;
+    }
     return `<div class="prop-row">
       <div class="prop-row-thumb">${p.img?`<img src="${p.img}"/>`:'📷'}</div>
       <div class="prop-row-info">
@@ -1368,6 +1392,19 @@ function upResClient(){
   const el4=$('ptxt');if(el4)el4.textContent=res+' de '+tot+' respondidas';
   const el5=$('ppct');if(el5)el5.textContent=tot?Math.round(res/tot*100)+'%':'0%';
   const el6=$('pfill');if(el6)el6.style.width=tot?Math.round(res/tot*100)+'%':'0%';
+  const banner=$('client-pending-banner');
+  if(banner){
+    const pending=props.filter(p=>!noDisp[p.id]&&!est[p.id]).length;
+    if(pending>0&&!clientResumenOpen){
+      banner.style.display='block';
+      banner.innerHTML=`<button onclick="openClientResumenPending()" style="width:100%;text-align:left;background:rgba(184,154,94,0.15);border:1px solid rgba(184,154,94,0.4);color:var(--gold);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span>⚠ Te ${pending===1?'falta 1 propiedad':'faltan '+pending+' propiedades'} por responder</span>
+        <span style="font-weight:600;white-space:nowrap">Ver resumen →</span>
+      </button>`;
+    } else {
+      banner.style.display='none';banner.innerHTML='';
+    }
+  }
 }
 
 // PASTE
