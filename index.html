@@ -889,7 +889,7 @@ window.toggleNoDisp=async function(id){
   toast(noDisp[id]?'⊘ Marcada como no disponible':'✓ Disponible nuevamente');
 }
 window.delProp=async function(id){props=props.filter(p=>p.id!==id);delete est[id];delete vd[id];delete mot[id];await saveFB();renderPropList();}
-let editingId=null,editingIndex=-1,noTimer=null,sbTimer=null; // track which prop is being edited
+let editingId=null,editingIndex=-1,noTimer=null,sbTimer=null,contactoTimer=null; // track which prop is being edited
 window.editProp=function(id){
   const p=props.find(x=>x.id===id);if(!p)return;
   $('fp').value=p.precio.replace('USD ','');$('ft').value=p.tipo;$('fm1').value=p.metraje.match(/^(\d+)/)?.[1]||'';$('fm2').value=p.metraje.match(/\| ?(\d+)/)?.[1]||'';
@@ -953,8 +953,8 @@ function renderResp(){
       else if(e==='visita'){
         const contacto=getContacto(v),visitas=getVisitas(v);
         const fechasHtml=contacto.fechas.map((f,fi)=>`<div class="vis-grid" data-cf-row="${fi}" style="margin-bottom:6px">
-            <input type="date" class="exp-input" value="${f.fecha||''}"/>
-            <input type="text" class="exp-input" placeholder="Comentario (ej: no atendió)" value="${f.nota||''}"/>
+            <input type="date" class="exp-input" value="${f.fecha||''}" oninput="autoSaveContacto(${p.id})"/>
+            <input type="text" class="exp-input" placeholder="Comentario (ej: no atendió)" value="${f.nota||''}" oninput="autoSaveContacto(${p.id})"/>
           </div>`).join('');
         const addr=(visitas[0]&&visitas[0].dv)||'';
         const visitasHtml=visitas.map((r,ri)=>{
@@ -972,10 +972,10 @@ function renderResp(){
         expandHtml=`<div class="expand-zone"><div class="exp-inner">
           <div class="exp-lbl">Contacto al colega <span style="font-weight:400;text-transform:none;letter-spacing:0">— solo vos ves esto</span></div>
           <div class="vis-grid" style="margin-bottom:8px">
-            <input type="text" class="exp-input" id="acol-${p.id}" placeholder="Nombre del colega" value="${contacto.nombre||''}"/>
-            <input type="text" class="exp-input" id="ainm-${p.id}" placeholder="Inmobiliaria" value="${contacto.inmobiliaria||''}"/>
+            <input type="text" class="exp-input" id="acol-${p.id}" placeholder="Nombre del colega" value="${contacto.nombre||''}" oninput="autoSaveContacto(${p.id})"/>
+            <input type="text" class="exp-input" id="ainm-${p.id}" placeholder="Inmobiliaria" value="${contacto.inmobiliaria||''}" oninput="autoSaveContacto(${p.id})"/>
           </div>
-          <input type="text" class="exp-input" id="ahon-${p.id}" placeholder="🔒 Honorarios (ej: 2%)" value="${contacto.hon||''}" style="margin-bottom:8px"/>
+          <input type="text" class="exp-input" id="ahon-${p.id}" placeholder="🔒 Honorarios (ej: 2%)" value="${contacto.hon||''}" style="margin-bottom:8px" oninput="autoSaveContacto(${p.id})"/>
           <div class="exp-lbl">Fechas de contacto <button type="button" class="pi-btn" onclick="addContactoFecha(${p.id})">+ agregar fecha</button></div>
           <div id="cf-rows-${p.id}">${fechasHtml}</div>
           ${visitasHtml}
@@ -1037,7 +1037,7 @@ window.addContactoFecha=function(id){
   const idx=cont.querySelectorAll('[data-cf-row]').length;
   const row=document.createElement('div');
   row.className='vis-grid';row.dataset.cfRow=idx;row.style.marginBottom='6px';
-  row.innerHTML=`<input type="date" class="exp-input" value=""/><input type="text" class="exp-input" placeholder="Comentario (ej: no atendió)" value=""/>`;
+  row.innerHTML=`<input type="date" class="exp-input" value="" oninput="autoSaveContacto(${id})"/><input type="text" class="exp-input" placeholder="Comentario (ej: no atendió)" value="" oninput="autoSaveContacto(${id})"/>`;
   cont.appendChild(row);
 }
 window.addVisitRound=function(id){
@@ -1047,6 +1047,24 @@ window.addVisitRound=function(id){
   visitas.push({});
   vd[id]={contacto:getContacto(v),visitas};
   renderResp();
+}
+window.autoSaveContacto=function(id){
+  clearTimeout(contactoTimer);
+  contactoTimer=setTimeout(async function(){
+    const v=vd[id]||{};
+    const cfRows=[...document.querySelectorAll('#cf-rows-'+id+' [data-cf-row]')].map(row=>{
+      const inputs=row.querySelectorAll('input');
+      return{fecha:inputs[0]?inputs[0].value:'',nota:inputs[1]?inputs[1].value:''};
+    }).filter(f=>f.fecha||f.nota);
+    const contacto={
+      nombre:($('acol-'+id)||{}).value||'',
+      inmobiliaria:($('ainm-'+id)||{}).value||'',
+      hon:($('ahon-'+id)||{}).value||'',
+      fechas:cfRows
+    };
+    vd[id]={contacto,visitas:getVisitas(v)};
+    await saveVisit_();toast('✓ Guardado automáticamente');
+  },1200);
 }
 // ── CLIENT RESUMEN ──
 let clientResumenFilter='all';
