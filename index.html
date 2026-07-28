@@ -285,6 +285,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--carbon
     </div>
   </div>
   <div class="dash-body">
+    <input type="text" class="exp-input" id="dash-search" placeholder="🔎 Buscar por nombre de cliente..." oninput="filterDashSearch(this.value)" style="margin-bottom:10px"/>
     <div class="filter-row" id="filter-row">
       <button class="filter-btn active" onclick="filterDash('all',this)">Todas</button>
       <button class="filter-btn" onclick="filterDash('proceso',this)">En proceso</button>
@@ -470,7 +471,7 @@ const storage=firebase.storage();
 const ADMIN_UID="uoRD8bq0BzbzZDtHSNXfPHvLKhY2";
 
 // STATE
-let sid=null,props=[],est={},vd={},mot={},sbMot={},noDisp={},con={},conResp={},cNom='',iA=1,mI=1,iF=1,imgD='',isAgent=false,viewMode='load',dashFilter='all',unsub=null,hist=[];
+let sid=null,props=[],est={},vd={},mot={},sbMot={},noDisp={},con={},conResp={},cNom='',iA=1,mI=1,iF=1,imgD='',isAgent=false,viewMode='load',dashFilter='all',dashSearchTerm='',unsub=null,hist=[];
 
 // UTILS
 const $=id=>document.getElementById(id);
@@ -572,7 +573,6 @@ window.startNewSearch=async function(){
   sid=genId();props=[];est={};vd={};mot={};sbMot={};noDisp={};con={};conResp={};cNom='';iA=1;mI=1;imgD='';isAgent=true;viewMode='load';
   $('ci').value='';$('link-box-wrap').style.display='none';$('agent-title').textContent='Nueva búsqueda';
   $('btn-toggle').textContent='Ver respuestas';$('load-view').style.display='block';$('resp-view').style.display='none';
-  try{await db.collection('busquedas').doc(sid).set({cNom:'',props:[],est:{},vd:{},mot:{},sbMot:{},noDisp:{},con:{},conResp:{},iA:1,mI:1,updatedAt:Date.now()});}catch(e){console.error('init doc:',e);}
   resetInstRow();renderPropList();show('screen-agent');subscribe();
 }
 window.openByCode=function(){const c=$('code-input').value.trim().toLowerCase();if(!c){toast('Ingresá un código');return;}sid=c;isAgent=false;openClient();}
@@ -585,10 +585,13 @@ function resetInstRow(){
 
 // DASHBOARD
 window.filterDash=function(f,btn){dashFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderDash();}
+window.filterDashSearch=function(v){dashSearchTerm=v;renderDash();}
 function renderDash(){
   const el=$('dash-list');
-  const filtered=dashFilter==='all'?hist:hist.filter(h=>h.status===dashFilter);
-  if(!filtered.length){el.innerHTML='<div class="empty-msg">No hay búsquedas en esta categoría</div>';return;}
+  let filtered=dashFilter==='all'?hist:hist.filter(h=>h.status===dashFilter);
+  const term=dashSearchTerm.trim().toLowerCase();
+  if(term)filtered=filtered.filter(h=>h.name.toLowerCase().includes(term));
+  if(!filtered.length){el.innerHTML=`<div class="empty-msg">${term?'No hay búsquedas que coincidan con "'+dashSearchTerm+'"':'No hay búsquedas en esta categoría'}</div>`;return;}
   const stMap={proceso:{l:'En proceso',c:'st-proceso'},standby:{l:'Stand by',c:'st-standby'},'noprosperó':{l:'No prosperó',c:'st-noprosperó'},exitoso:{l:'Cierre exitoso',c:'st-exitoso'}};
   el.innerHTML=filtered.map(h=>{
     const st=stMap[h.status]||stMap.proceso;
@@ -624,9 +627,11 @@ window.delSearch=async(id,name)=>{
 }
 window.openSearch=async(id,name)=>{
   sid=id;cNom=name;isAgent=true;viewMode='load';showLoad(true);
+  props=[];est={};vd={};mot={};sbMot={};noDisp={};con={};conResp={};iA=1;mI=1;
   try{
     const snap=await db.collection('busquedas').doc(sid).get();
-    if(snap.exists){const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};noDisp=d.noDisp||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||name;iA=d.iA||1;mI=d.mI||1;}
+    if(!snap.exists){showLoad(false);toast('⚠ Esta búsqueda no se encontró en la base de datos');await backToDash();return;}
+    const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};noDisp=d.noDisp||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||name;iA=d.iA||1;mI=d.mI||1;
     $('ci').value=cNom;$('agent-title').textContent=cNom;
     $('btn-toggle').textContent='Ver respuestas';$('load-view').style.display='block';$('resp-view').style.display='none';
     const url=`${location.origin}${location.pathname}?b=${sid}`;
@@ -639,9 +644,11 @@ window.openSearch=async(id,name)=>{
 }
 window.openResp=async(id,name)=>{
   sid=id;cNom=name;isAgent=true;viewMode='resp';showLoad(true);
+  props=[];est={};vd={};mot={};sbMot={};noDisp={};con={};conResp={};
   try{
     const snap=await db.collection('busquedas').doc(sid).get();
-    if(snap.exists){const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};noDisp=d.noDisp||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||name;mI=d.mI||1;}
+    if(!snap.exists){showLoad(false);toast('⚠ Esta búsqueda no se encontró en la base de datos');await backToDash();return;}
+    const d=snap.data();props=d.props||[];est=d.est||{};vd=d.vd||{};mot=d.mot||{};sbMot=d.sbMot||{};noDisp=d.noDisp||{};con=d.con||{};conResp=d.conResp||{};cNom=d.cNom||name;mI=d.mI||1;
     $('agent-title').textContent=cNom;$('btn-toggle').textContent='Cargar props';
     $('load-view').style.display='none';$('resp-view').style.display='block';
     iF=1;renderResp();show('screen-agent');subscribe();await setHistAlert(id,false);
@@ -652,6 +659,11 @@ window.openResp=async(id,name)=>{
 // AGENT ACTIONS
 window.setCliente=async function(){
   const v=$('ci').value.trim();if(!v){toast('Escribí el nombre del cliente');return;}
+  const dup=hist.find(h=>h.id!==sid&&h.name.trim().toLowerCase()===v.toLowerCase());
+  if(dup){
+    const proceed=confirm(`Ya tenés una búsqueda guardada para "${dup.name}" (creada el ${dup.date}).\n\nSi creás otra, vas a tener dos links distintos para el mismo cliente y podrías compartir uno pero cargar propiedades en el otro.\n\nAceptar = crear igual esta búsqueda nueva\nCancelar = abrir la búsqueda existente`);
+    if(!proceed){await openSearch(dup.id,dup.name);return;}
+  }
   cNom=v;$('agent-title').textContent=cNom;
   await saveFB();await addHist(sid,cNom);
   const url=`${location.origin}${location.pathname}?b=${sid}`;
@@ -906,6 +918,19 @@ function renderPropList(){
   </div>`).join('');
 }
 
+// VISIT DATA HELPERS (backward-compatible with old flat vd[id] shape)
+function getVisitas(v){
+  if(v.visitas)return v.visitas;
+  if(v.fv||v.hv||v.dv||v.comentario||v.saved)return[{fv:v.fv||'',hv:v.hv||'',dv:v.dv||'',comentario:v.comentario||'',saved:v.saved||''}];
+  return[];
+}
+function getContacto(v){
+  if(v.contacto)return v.contacto;
+  const c={nombre:'',inmobiliaria:'',hon:v.hon||'',fechas:[]};
+  if(v.fc)c.fechas.push({fecha:v.fc,nota:''});
+  return c;
+}
+
 // AGENT RESPONSES
 function renderResp(){
   const insts=[...new Set(props.map(p=>p.inst))].sort((a,b)=>a-b);
@@ -925,19 +950,31 @@ function renderResp(){
       if(e==='no'&&m){expandHtml=`<div class="motivo-box">💬 Motivo: ${m}</div>`;}
       if(e==='standby'&&sbMot[p.id]){expandHtml=`<div class="motivo-box" style="background:var(--amber-pale);color:var(--amber-txt)">💬 Comentario: ${sbMot[p.id]}</div>`;}
       else if(e==='visita'){
-        expandHtml=`<div class="expand-zone"><div class="exp-inner">
-          <div class="exp-lbl">Contacto al colega</div>
-          <div class="vis-grid" style="margin-bottom:8px">
-            <input type="date" class="exp-input" id="afc-${p.id}" value="${v.fc||''}"/>
-            <input type="text" class="exp-input" id="ahon-${p.id}" placeholder="🔒 Honorarios (ej: 2%)" value="${v.hon||''}"/>
-          </div>
-          <div class="exp-lbl">Datos de la visita</div>
-          <div class="vis-grid"><input type="date" class="exp-input" id="afv-${p.id}" value="${v.fv||''}"/><input type="time" class="exp-input" id="ahv-${p.id}" value="${v.hv||''}"/></div>
-          <input type="text" class="exp-input" id="adv-${p.id}" placeholder="Dirección exacta" value="${v.dv||''}" style="margin-top:8px"/>
+        const contacto=getContacto(v),visitas=getVisitas(v);
+        const fechasHtml=contacto.fechas.map((f,fi)=>`<div class="vis-grid" data-cf-row="${fi}" style="margin-bottom:6px">
+            <input type="date" class="exp-input" value="${f.fecha||''}"/>
+            <input type="text" class="exp-input" placeholder="Comentario (ej: no atendió)" value="${f.nota||''}"/>
+          </div>`).join('');
+        const visitasHtml=visitas.map((r,ri)=>`
+          <div class="exp-lbl">Datos de la visita${visitas.length>1?' '+(ri+1):''}</div>
+          <div class="vis-grid"><input type="date" class="exp-input" id="afv-${p.id}-${ri}" value="${r.fv||''}"/><input type="time" class="exp-input" id="ahv-${p.id}-${ri}" value="${r.hv||''}"/></div>
+          <input type="text" class="exp-input" id="adv-${p.id}-${ri}" placeholder="Dirección exacta" value="${r.dv||''}" style="margin-top:8px"/>
           <div class="exp-lbl">Comentarios post-visita</div>
-          <textarea class="exp-textarea" id="acm-${p.id}" placeholder="Valoraciones, observaciones, pros y contras...">${v.comentario||''}</textarea>
-          <button class="btn-confirm2" onclick="saveVisit(${p.id})">Guardar datos de visita</button>
-          ${v.saved?`<div class="saved-tag">✓ Guardado ${v.saved}${v.hon?' · 🔒 '+v.hon:''}</div>`:''}
+          <textarea class="exp-textarea" id="acm-${p.id}-${ri}" placeholder="Valoraciones, observaciones, pros y contras...">${r.comentario||''}</textarea>
+          <button class="btn-confirm2" onclick="saveVisit(${p.id},${ri})">Guardar datos de visita${visitas.length>1?' '+(ri+1):''}</button>
+          ${r.saved?`<div class="saved-tag">✓ Guardado ${r.saved}</div>`:''}
+        `).join('');
+        expandHtml=`<div class="expand-zone"><div class="exp-inner">
+          <div class="exp-lbl">Contacto al colega <span style="font-weight:400;text-transform:none;letter-spacing:0">— solo vos ves esto</span></div>
+          <div class="vis-grid" style="margin-bottom:8px">
+            <input type="text" class="exp-input" id="acol-${p.id}" placeholder="Nombre del colega" value="${contacto.nombre||''}"/>
+            <input type="text" class="exp-input" id="ainm-${p.id}" placeholder="Inmobiliaria" value="${contacto.inmobiliaria||''}"/>
+          </div>
+          <input type="text" class="exp-input" id="ahon-${p.id}" placeholder="🔒 Honorarios (ej: 2%)" value="${contacto.hon||''}" style="margin-bottom:8px"/>
+          <div class="exp-lbl">Fechas de contacto <button type="button" class="pi-btn" onclick="addContactoFecha(${p.id})">+ agregar fecha</button></div>
+          <div id="cf-rows-${p.id}">${fechasHtml}</div>
+          ${visitasHtml}
+          ${visitas.length<4?`<button class="btn-confirm2" style="background:var(--gold,#B08D57)" onclick="addVisitRound(${p.id})">+ Coordinar nueva visita</button>`:''}
         </div></div>`;
       }
       h+=`<div class="prop-card${e?' estado-'+e:''}" id="apc-${p.id}">
@@ -969,10 +1006,41 @@ function renderResp(){
   $('resp-cards').innerHTML=h;upResAgent();
 }
 window.rfilt=n=>{iF=n;renderResp();}
-window.saveVisit=async function(id){
-  const fc=$('afc-'+id),fv=$('afv-'+id),hv=$('ahv-'+id),dv=$('adv-'+id),cm=$('acm-'+id),ahon=document.getElementById('ahon-'+id);
-  vd[id]={fc:fc?fc.value:'',fv:fv?fv.value:'',hv:hv?hv.value:'',dv:dv?dv.value:'',comentario:cm?cm.value:'',hon:ahon?ahon.value:'',saved:new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+window.saveVisit=async function(id,ri){
+  ri=ri||0;
+  const v=vd[id]||{};
+  const cfRows=[...document.querySelectorAll('#cf-rows-'+id+' [data-cf-row]')].map(row=>{
+    const inputs=row.querySelectorAll('input');
+    return{fecha:inputs[0]?inputs[0].value:'',nota:inputs[1]?inputs[1].value:''};
+  }).filter(f=>f.fecha||f.nota);
+  const contacto={
+    nombre:($('acol-'+id)||{}).value||'',
+    inmobiliaria:($('ainm-'+id)||{}).value||'',
+    hon:($('ahon-'+id)||{}).value||'',
+    fechas:cfRows
+  };
+  const visitas=getVisitas(v);
+  while(visitas.length<=ri)visitas.push({});
+  const fv=$('afv-'+id+'-'+ri),hv=$('ahv-'+id+'-'+ri),dv=$('adv-'+id+'-'+ri),cm=$('acm-'+id+'-'+ri);
+  visitas[ri]={fv:fv?fv.value:'',hv:hv?hv.value:'',dv:dv?dv.value:'',comentario:cm?cm.value:'',saved:new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+  vd[id]={contacto,visitas};
   await saveVisit_();toast('✓ Visita guardada');renderResp();
+}
+window.addContactoFecha=function(id){
+  const cont=$('cf-rows-'+id);if(!cont)return;
+  const idx=cont.querySelectorAll('[data-cf-row]').length;
+  const row=document.createElement('div');
+  row.className='vis-grid';row.dataset.cfRow=idx;row.style.marginBottom='6px';
+  row.innerHTML=`<input type="date" class="exp-input" value=""/><input type="text" class="exp-input" placeholder="Comentario (ej: no atendió)" value=""/>`;
+  cont.appendChild(row);
+}
+window.addVisitRound=function(id){
+  const v=vd[id]||{};
+  const visitas=getVisitas(v);
+  if(visitas.length>=4){toast('Ya se alcanzó el máximo de 4 visitas');return;}
+  visitas.push({});
+  vd[id]={contacto:getContacto(v),visitas};
+  renderResp();
 }
 // ── CLIENT RESUMEN ──
 let clientResumenFilter='all';
@@ -1014,11 +1082,12 @@ function renderClientResumen(){
   el.innerHTML=filtered.map(p=>{
     const status=getPropStatus(p);
     const vinfo=vd[p.id]||{};
+    const ultima=getVisitas(vinfo).filter(r=>r.fv||r.hv||r.dv||r.comentario).slice(-1)[0]||{};
     let extraInfo='';
-    if(status==='avisitar'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:var(--green-txt);margin-left:6px">📅 ${vinfo.fv}${vinfo.hv?' — '+vinfo.hv:''}</span>`;
-    if(status==='avisitar'&&vinfo.dv) extraInfo+=`<div style="font-size:11px;color:var(--muted)">📍 ${vinfo.dv}</div>`;
-    if(status==='realizada'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:#1E8449;margin-left:6px">Visitada ${vinfo.fv}</span>`;
-    if(status==='realizada'&&vinfo.comentario) extraInfo+=`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${vinfo.comentario.substring(0,60)}${vinfo.comentario.length>60?'...':''}"</div>`;
+    if(status==='avisitar'&&ultima.fv) extraInfo=`<span style="font-size:11px;color:var(--green-txt);margin-left:6px">📅 ${ultima.fv}${ultima.hv?' — '+ultima.hv:''}</span>`;
+    if(status==='avisitar'&&ultima.dv) extraInfo+=`<div style="font-size:11px;color:var(--muted)">📍 ${ultima.dv}</div>`;
+    if(status==='realizada'&&ultima.fv) extraInfo=`<span style="font-size:11px;color:#1E8449;margin-left:6px">Visitada ${ultima.fv}</span>`;
+    if(status==='realizada'&&ultima.comentario) extraInfo+=`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${ultima.comentario.substring(0,60)}${ultima.comentario.length>60?'...':''}"</div>`;
     return `<div class="prop-row">
       <div class="prop-row-thumb">${p.img?`<img src="${p.img}"/>`:'📷'}</div>
       <div class="prop-row-info">
@@ -1066,9 +1135,10 @@ function getPropStatus(p){
   const vinfo=vd[p.id]||{};
   if(noDisp[p.id]) return 'nodisponible';
   if(e==='visita'){
-    // Check if visit date has passed
-    if(vinfo.fv){
-      const visitDate=new Date(vinfo.fv);
+    // Check if the most recent visit round's date has passed
+    const rondas=getVisitas(vinfo).filter(r=>r.fv);
+    if(rondas.length){
+      const visitDate=new Date(rondas[rondas.length-1].fv);
       visitDate.setHours(23,59,59);
       if(visitDate < new Date()) return 'realizada';
     }
@@ -1103,11 +1173,12 @@ function renderResumen(){
   el.innerHTML=filtered.map(p=>{
     const status=getPropStatus(p);
     const vinfo=vd[p.id]||{};
+    const ultima=getVisitas(vinfo).filter(r=>r.fv||r.hv||r.dv||r.comentario).slice(-1)[0]||{};
     let extraInfo='';
-    if(status==='avisitar'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:var(--green-txt);margin-left:6px">📅 ${vinfo.fv}${vinfo.hv?' '+vinfo.hv:''}</span>`;
-    if(status==='realizada'&&vinfo.fv) extraInfo=`<span style="font-size:11px;color:#1E8449;margin-left:6px">Visitada ${vinfo.fv}</span>`;
-    if(status==='realizada'&&vinfo.comentario) extraInfo+=`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${vinfo.comentario.substring(0,60)}${vinfo.comentario.length>60?'...':''}"</div>`;
-    const honInfo=vd[p.id]?.hon?`<span style="font-size:11px;color:#7F8C8D;margin-left:8px">🔒 ${vd[p.id].hon}</span>`:'';
+    if(status==='avisitar'&&ultima.fv) extraInfo=`<span style="font-size:11px;color:var(--green-txt);margin-left:6px">📅 ${ultima.fv}${ultima.hv?' '+ultima.hv:''}</span>`;
+    if(status==='realizada'&&ultima.fv) extraInfo=`<span style="font-size:11px;color:#1E8449;margin-left:6px">Visitada ${ultima.fv}</span>`;
+    if(status==='realizada'&&ultima.comentario) extraInfo+=`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${ultima.comentario.substring(0,60)}${ultima.comentario.length>60?'...':''}"</div>`;
+    const honInfo=getContacto(vinfo).hon?`<span style="font-size:11px;color:#7F8C8D;margin-left:8px">🔒 ${getContacto(vinfo).hon}</span>`:'';
     return `<div class="prop-row">
       <div class="prop-row-thumb">${p.img?`<img src="${p.img}"/>`:'📷'}</div>
       <div class="prop-row-info">
@@ -1174,17 +1245,20 @@ function renderClient(){
       }
       else if(e==='visita'){
         const v=vd[p.id]||{};
-        const hasData=v.fv||v.hv||v.dv||v.comentario;
-        if(hasData){
-          const visitLines=[];
-          if(v.fc) visitLines.push(`📞 <strong>Contacto al colega:</strong> ${v.fc}`);
-          if(v.fv||v.hv) visitLines.push(`📅 <strong>Visita agendada:</strong> ${[v.fv,v.hv].filter(Boolean).join(' — ')}`);
-          if(v.dv) visitLines.push(`📍 <strong>Dirección:</strong> ${v.dv}`);
-          expandHtml=`<div class="expand-zone"><div class="exp-inner">
-            <div style="background:var(--green-pale);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--green-txt);line-height:2;margin-bottom:${v.comentario?'10px':'0'}">
-              ✓ <strong>Visita coordinada</strong><br>${visitLines.join('<br>')}
+        const visitas=getVisitas(v).filter(r=>r.fv||r.hv||r.dv||r.comentario);
+        if(visitas.length){
+          const roundsHtml=visitas.map((r,ri)=>{
+            const visitLines=[];
+            if(r.fv||r.hv) visitLines.push(`📅 <strong>Visita agendada:</strong> ${[r.fv,r.hv].filter(Boolean).join(' — ')}`);
+            if(r.dv) visitLines.push(`📍 <strong>Dirección:</strong> ${r.dv}`);
+            return`<div style="background:var(--green-pale);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--green-txt);line-height:2;margin-bottom:${r.comentario?'6px':'10px'}">
+              ✓ <strong>Visita${visitas.length>1?' '+(ri+1):''} coordinada</strong><br>${visitLines.join('<br>')}
             </div>
-            ${v.comentario?`<div class="exp-lbl">Devolución de la visita</div><div style="background:var(--cream);border:0.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--carbon);line-height:1.6">${v.comentario}</div>`:''}
+            ${r.comentario?`<div class="exp-lbl">Devolución de la visita</div><div style="background:var(--cream);border:0.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--carbon);line-height:1.6;margin-bottom:10px">${r.comentario}</div>`:''}`;
+          }).join('');
+          expandHtml=`<div class="expand-zone"><div class="exp-inner">
+            ${roundsHtml}
+            ${visitas.length<4?`<button class="btn-confirm2" onclick="clientAddVisit(${p.id})">+ Coordinar nueva visita</button>`:''}
           </div></div>`;
         } else {
           expandHtml=`<div class="visita-ok">✓ <strong>¡Perfecto!</strong> Tu agente va a coordinar la visita y te contactará pronto.</div>`;
@@ -1227,6 +1301,18 @@ window.cAcc=async(id,tipo)=>{
   if(tipo==='no'){est[id]='no';renderClient();await saveResp();return;}
   if(tipo==='standby'){est[id]='standby';renderClient();await saveResp();return;}
   est[id]=tipo;renderClient();await saveResp();
+}
+window.clientAddVisit=async function(id){
+  const v=vd[id]||{};
+  const visitas=getVisitas(v);
+  if(visitas.length>=4){toast('Ya se alcanzó el máximo de 4 visitas');return;}
+  visitas.push({});
+  vd[id]={contacto:getContacto(v),visitas};
+  try{
+    await db.collection('busquedas').doc(sid).update({[`vd.${id}`]:vd[id],updatedAt:Date.now()});
+    toast('✓ Pedido enviado, tu agente va a coordinar la próxima visita');
+  }catch(e){console.error(e);toast('⚠ Error al guardar');}
+  renderClient();
 }
 window.toggleConForm=function(id){
   const el=document.getElementById('cex-'+id);
