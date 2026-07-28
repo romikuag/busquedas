@@ -955,15 +955,19 @@ function renderResp(){
             <input type="date" class="exp-input" value="${f.fecha||''}"/>
             <input type="text" class="exp-input" placeholder="Comentario (ej: no atendió)" value="${f.nota||''}"/>
           </div>`).join('');
-        const visitasHtml=visitas.map((r,ri)=>`
+        const addr=(visitas[0]&&visitas[0].dv)||'';
+        const visitasHtml=visitas.map((r,ri)=>{
+          const isPending=ri>0&&!(r.fv||r.hv||r.comentario||r.saved);
+          return`
+          ${isPending?`<div style="background:var(--amber-pale);color:var(--amber-txt);border-radius:10px;padding:10px 12px;font-size:12px;margin-top:12px">🔔 El cliente pidió coordinar una nueva visita</div>`:''}
           <div class="exp-lbl">Datos de la visita${visitas.length>1?' '+(ri+1):''}</div>
           <div class="vis-grid"><input type="date" class="exp-input" id="afv-${p.id}-${ri}" value="${r.fv||''}"/><input type="time" class="exp-input" id="ahv-${p.id}-${ri}" value="${r.hv||''}"/></div>
-          <input type="text" class="exp-input" id="adv-${p.id}-${ri}" placeholder="Dirección exacta" value="${r.dv||''}" style="margin-top:8px"/>
+          ${ri===0?`<input type="text" class="exp-input" id="adv-${p.id}-0" placeholder="Dirección exacta" value="${r.dv||''}" style="margin-top:8px"/>`:(addr?`<div style="font-size:12px;color:var(--muted);margin-top:8px">📍 ${addr}</div>`:'')}
           <div class="exp-lbl">Comentarios post-visita</div>
           <textarea class="exp-textarea" id="acm-${p.id}-${ri}" placeholder="Valoraciones, observaciones, pros y contras...">${r.comentario||''}</textarea>
           <button class="btn-confirm2" onclick="saveVisit(${p.id},${ri})">Guardar datos de visita${visitas.length>1?' '+(ri+1):''}</button>
           ${r.saved?`<div class="saved-tag">✓ Guardado ${r.saved}</div>`:''}
-        `).join('');
+        `;}).join('');
         expandHtml=`<div class="expand-zone"><div class="exp-inner">
           <div class="exp-lbl">Contacto al colega <span style="font-weight:400;text-transform:none;letter-spacing:0">— solo vos ves esto</span></div>
           <div class="vis-grid" style="margin-bottom:8px">
@@ -1021,8 +1025,9 @@ window.saveVisit=async function(id,ri){
   };
   const visitas=getVisitas(v);
   while(visitas.length<=ri)visitas.push({});
-  const fv=$('afv-'+id+'-'+ri),hv=$('ahv-'+id+'-'+ri),dv=$('adv-'+id+'-'+ri),cm=$('acm-'+id+'-'+ri);
-  visitas[ri]={fv:fv?fv.value:'',hv:hv?hv.value:'',dv:dv?dv.value:'',comentario:cm?cm.value:'',saved:new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+  const fv=$('afv-'+id+'-'+ri),hv=$('ahv-'+id+'-'+ri),cm=$('acm-'+id+'-'+ri);
+  const dv=ri===0?(($('adv-'+id+'-0')||{}).value||''):((visitas[0]&&visitas[0].dv)||'');
+  visitas[ri]={fv:fv?fv.value:'',hv:hv?hv.value:'',dv,comentario:cm?cm.value:'',saved:new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
   vd[id]={contacto,visitas};
   await saveVisit_();toast('✓ Visita guardada');renderResp();
 }
@@ -1247,10 +1252,11 @@ function renderClient(){
         const v=vd[p.id]||{};
         const visitas=getVisitas(v).filter(r=>r.fv||r.hv||r.dv||r.comentario);
         if(visitas.length){
+          const dirComun=(visitas[0]&&visitas[0].dv)||'';
           const roundsHtml=visitas.map((r,ri)=>{
             const visitLines=[];
             if(r.fv||r.hv) visitLines.push(`📅 <strong>Visita agendada:</strong> ${[r.fv,r.hv].filter(Boolean).join(' — ')}`);
-            if(r.dv) visitLines.push(`📍 <strong>Dirección:</strong> ${r.dv}`);
+            if(r.dv||dirComun) visitLines.push(`📍 <strong>Dirección:</strong> ${r.dv||dirComun}`);
             return`<div style="background:var(--green-pale);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--green-txt);line-height:2;margin-bottom:${r.comentario?'6px':'10px'}">
               ✓ <strong>Visita${visitas.length>1?' '+(ri+1):''} coordinada</strong><br>${visitLines.join('<br>')}
             </div>
@@ -1310,6 +1316,7 @@ window.clientAddVisit=async function(id){
   vd[id]={contacto:getContacto(v),visitas};
   try{
     await db.collection('busquedas').doc(sid).update({[`vd.${id}`]:vd[id],updatedAt:Date.now()});
+    await setHistAlert(sid,true);
     toast('✓ Pedido enviado, tu agente va a coordinar la próxima visita');
   }catch(e){console.error(e);toast('⚠ Error al guardar');}
   renderClient();
