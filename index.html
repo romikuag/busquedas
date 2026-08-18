@@ -472,7 +472,7 @@ const storage=firebase.storage();
 const ADMIN_UID="uoRD8bq0BzbzZDtHSNXfPHvLKhY2";
 
 // STATE
-let sid=null,props=[],est={},vd={},mot={},sbMot={},noDisp={},con={},conResp={},cNom='',iA=1,mI=1,iF=1,imgD='',isAgent=false,viewMode='load',dashFilter='all',dashSearchTerm='',unsub=null,hist=[];
+let sid=null,props=[],est={},vd={},mot={},sbMot={},noDisp={},con={},conResp={},cNom='',iA=1,mI=1,iF=1,imgD='',imgUploadP=null,isAgent=false,viewMode='load',dashFilter='all',dashSearchTerm='',unsub=null,hist=[];
 
 // UTILS
 const $=id=>document.getElementById(id);
@@ -510,12 +510,21 @@ async function delHist(id){hist=hist.filter(h=>h.id!==id);await saveHist();}
 // FIREBASE
 async function saveFB(){
   if(!sid)return;
-  // Safety: if any prop still has a raw base64 dataURL (upload in progress), wait up to 3s
+  // Safety: if any prop still has a raw base64 dataURL, give the Storage upload a real chance to finish
+  // (instead of a blind short timeout that used to wipe the photo out from under the agent).
   const hasBase64=props.some(p=>p.img&&p.img.startsWith('data:'));
-  if(hasBase64){
-    await new Promise(r=>setTimeout(r,3000));
-    props=props.map(p=>({...p,img:(p.img&&p.img.startsWith('data:'))?'':p.img}));
+  if(hasBase64&&imgUploadP){
+    await Promise.race([imgUploadP,new Promise(r=>setTimeout(r,10000))]);
   }
+  // Only strip an image as a last resort if it's still base64 AND large enough to risk blowing the
+  // 1MB Firestore document limit — otherwise keep the local copy so the client still sees the photo.
+  props=props.map(p=>{
+    if(p.img&&p.img.startsWith('data:')&&p.img.length>700000){
+      toast('⚠ Una imagen no se pudo subir y era muy grande para guardar');
+      return {...p,img:''};
+    }
+    return p;
+  });
   try{
     // IMPORTANT: only update agent-owned fields. Never overwrite est/mot/sbMot/con/conResp
     // which are owned by the client. Use update() with merge to be safe.
@@ -699,7 +708,7 @@ window.oDL=()=>$('da').classList.remove('drag');
 window.oDD=e=>{e.preventDefault();$('da').classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))lImg(f);}
 window.oFS=e=>{const f=e.target.files[0];if(f)lImg(f);}
 window.oP=e=>{e.preventDefault();const items=e.clipboardData&&e.clipboardData.items;if(!items)return;for(let i=0;i<items.length;i++){if(items[i].type.startsWith('image/')){lImg(items[i].getAsFile());break;}}}
-async function uploadImgToStorage(dataUrlOrBlob, filename){
+async function uploadImgToStorage(dataUrlOrBlob, filename, retry){
   try{
     const storageRef = storage.ref('prop-images/' + (sid||'nosid') + '/' + filename);
     let uploadTask;
@@ -714,6 +723,7 @@ async function uploadImgToStorage(dataUrlOrBlob, filename){
     return url;
   } catch(e){
     console.error('Storage upload error:', e);
+    if(!retry) return uploadImgToStorage(dataUrlOrBlob, filename, true); // one retry (flaky mobile connections)
     return null;
   }
 }
@@ -733,8 +743,9 @@ function lImg(file){
     // Upload to Storage using .then() - no await needed
     toast('⬆ Subiendo imagen...');
     const fname=Date.now()+'.jpg';
-    uploadImgToStorage(dataUrl,fname).then(function(url2){
-      if(url2){imgD=url2;toast('✓ Imagen lista');}
+    imgUploadP=uploadImgToStorage(dataUrl,fname).then(function(url2){
+      if(url2){if(imgD===dataUrl)imgD=url2;toast('✓ Imagen lista');}
+      else toast('⚠ No se pudo subir la imagen, se guardó localmente');
     });
   };img.src=url;
 }
@@ -839,8 +850,8 @@ window.fetchLinkImg=async function(){
         imgD=dataUrlPortal;
         // Upload to Storage using .then() - no await needed
         const fnamePortal=Date.now()+'.jpg';
-        uploadImgToStorage(dataUrlPortal,fnamePortal).then(function(urlPortal){
-          if(urlPortal) imgD=urlPortal;
+        imgUploadP=uploadImgToStorage(dataUrlPortal,fnamePortal).then(function(urlPortal){
+          if(urlPortal&&imgD===dataUrlPortal) imgD=urlPortal;
         });
       }catch(e){imgD=imgUrl;
         document.getElementById('ipv').src=imgUrl;
